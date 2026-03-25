@@ -1,0 +1,4 @@
+node_modules/
+.env
+tmp-annalyzer-script.js
+npm-debug.log*

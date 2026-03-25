@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AccessMap - ADA Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,700;0,900;1,700&family=Barlow:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#060608;--surface:#0c0c10;--surface2:#111116;--surface3:#17171e;
+  --border:#1a1a22;--border2:#242430;--border3:#333340;
+  --text:#FFFFFF;--muted:#FFFFFF;--muted2:#FFFFFF;--muted3:#FFFFFF;
+  --amber:#D4960A;--amber2:#f0a80a;--amber3:#ffd060;
+  --red:#C1281B;--red2:#e03020;--red3:#ff6655;
+  --green:#1E7A3E;--green2:#25a050;--green3:#4dda80;
+  --blue:#1a4a8a;--blue2:#2060cc;
+  --purple:#6a2a9a;
+  --radius:0px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow-x:hidden;cursor:none;min-height:100vh;}
+
+/* ── CURSOR ── */
+#cur{position:fixed;width:28px;height:28px;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:transform 0.1s;}
+#cur::before{content:'';position:absolute;width:1px;height:100%;left:50%;top:0;background:var(--amber);opacity:0.9;}
+#cur::after{content:'';position:absolute;width:100%;height:1px;top:50%;left:0;background:var(--amber);opacity:0.9;}
+#cur-dot{position:fixed;width:5px;height:5px;background:var(--amber);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);box-shadow:0 0 8px var(--amber);transition:transform 0.05s;}
+body:hover #cur{transform:translate(-50%,-50%) scale(1);}
+
+/* ── STRIPE ── */
+.stripe{position:fixed;top:0;left:0;right:0;height:2px;z-index:10000;}
+.stripe-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:width 0.4s ease;box-shadow:0 0 12px var(--amber);}
+
+/* ── NOISE ── */
+body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.032;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:160px;}
+
+/* ── SCANLINES ── */
+body::before{content:'';position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0.015;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.03) 2px,rgba(255,255,255,0.03) 4px);}
+
+/* ── NAV ── */
+nav{position:fixed;top:2px;left:0;right:0;height:52px;z-index:999;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);background:rgba(6,6,8,0.97);backdrop-filter:blur(20px);}
+.nav-logo{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--amber);letter-spacing:0.22em;text-decoration:none;display:flex;align-items:center;gap:8px;}
+.nav-logo-dot{width:6px;height:6px;background:var(--amber);border-radius:50%;animation:logoPulse 2s ease infinite;}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 0 0 rgba(212,150,10,0.4)}50%{box-shadow:0 0 0 6px rgba(212,150,10,0)}}
+.nav-logo span{color:var(--muted3);}
+.nav-center{display:flex;align-items:center;gap:0;}
+.nav-step-item{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;
+  padding:6px 18px;border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;gap:7px;
+  border-right:none;position:relative;transition:all 0.2s;}
+.nav-step-item:last-child{border-right:1px solid var(--border);}
+.nav-step-item.active{background:var(--amber);color:#000;border-color:var(--amber);}
+.nav-step-item.done{color:var(--green2);border-color:var(--border2);}
+.nav-step-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;padding:3px 9px;letter-spacing:0.15em;border:1px solid;display:none;}
+.nav-badge.show{display:block;}
+.nav-badge.demo{color:var(--amber);border-color:var(--amber);}
+.nav-badge.live{color:var(--green2);border-color:var(--green);}
+.nav-icon-btn{width:34px;height:34px;border:1px solid var(--border);background:none;cursor:none;
+  display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;transition:all 0.15s;}
+.nav-icon-btn:hover{border-color:var(--amber);color:var(--amber);}
+.nav-key-btn{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.1em;
+  border:1px solid var(--border);padding:5px 12px;cursor:none;background:none;transition:all 0.2s;text-transform:uppercase;}
+.nav-key-btn:hover{color:var(--amber);border-color:var(--amber);}
+
+/* ═══════════════ MODALS ═══════════════ */
+.modal-overlay{position:fixed;inset:0;z-index:5000;background:rgba(6,6,8,0.95);
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.modal-overlay.show{display:flex;}
+.modal-box{border:1px solid var(--amber);background:var(--surface);padding:44px;max-width:540px;width:90%;position:relative;
+  animation:modalIn 0.2s ease;}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-tag{position:absolute;top:-1px;left:20px;background:var(--amber);color:#000;font-family:'IBM Plex Mono',monospace;
+  font-size:8px;font-weight:700;padding:2px 10px;letter-spacing:0.22em;}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:34px;text-transform:uppercase;margin-bottom:6px;letter-spacing:0.02em;}
+.modal-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.7;letter-spacing:0.04em;margin-bottom:24px;}
+.modal-sub a{color:var(--amber);text-decoration:none;}
+.modal-input-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:5px;display:block;}
+.modal-input{width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);
+  font-family:'IBM Plex Mono',monospace;font-size:12px;padding:13px 15px;letter-spacing:0.06em;outline:none;transition:border-color 0.2s;}
+.modal-input:focus{border-color:var(--amber);}
+.modal-input::placeholder{color:var(--muted2);}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.modal-btn{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.12em;
+  text-transform:uppercase;padding:11px 26px;border:none;cursor:none;flex:1;transition:0.15s;}
+.modal-btn.primary{background:var(--amber);color:#000;}
+.modal-btn.primary:hover{background:var(--amber2);}
+.modal-btn.ghost{background:transparent;border:1px solid var(--border2);color:var(--muted);}
+.modal-btn.ghost:hover{border-color:var(--text);color:var(--text);}
+.modal-note{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted2);margin-top:14px;line-height:1.6;letter-spacing:0.04em;}
+.key-saved{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--green2);letter-spacing:0.1em;display:none;margin-top:6px;}
+
+/* Fix Guide Modal */
+#fixModal .modal-box{max-width:680px;border-color:var(--border2);max-height:85vh;overflow-y:auto;}
+#fixModal .modal-tag{background:var(--blue2);}
+.fix-loading{display:flex;align-items:center;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding:20px 0;}
+.fix-loading-dot{width:6px;height:6px;border-radius:50%;background:var(--blue2);animation:fixDot 1.2s ease infinite;}
+.fix-loading-dot:nth-child(2){animation-delay:0.2s;}
+.fix-loading-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes fixDot{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}
+.fix-content{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted3);line-height:1.9;letter-spacing:0.03em;white-space:pre-wrap;}
+.fix-content strong{color:var(--text);font-weight:700;}
+
+/* Fullscreen image modal */
+#fsModal{background:rgba(0,0,0,0.97);}
+#fsModal .fs-wrap{position:relative;max-width:96vw;max-height:92vh;}
+#fsPhoto{max-width:96vw;max-height:88vh;object-fit:contain;display:block;}
+.fs-overlay-layer{position:absolute;inset:0;pointer-events:none;}
+.fs-close{position:fixed;top:20px;right:20px;width:40px;height:40px;border:1px solid var(--border2);background:var(--surface);
+  color:var(--text);font-size:18px;cursor:none;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.fs-close:hover{border-color:var(--amber);color:var(--amber);}
+
+/* ═══════════════ AI CHAT PANEL ═══════════════ */
+#chatPanel{position:fixed;right:0;top:54px;bottom:0;width:400px;background:var(--surface);
+  border-left:1px solid var(--border);z-index:900;display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+#chatPanel.open{transform:translateX(0);}
+.chat-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.chat-header-left{display:flex;align-items:center;gap:10px;}
+.chat-ai-dot{width:7px;height:7px;border-radius:50%;background:var(--blue2);box-shadow:0 0 8px var(--blue2);animation:aiPulse 2s ease infinite;}
+@keyframes aiPulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.chat-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--text);letter-spacing:0.15em;}
+.chat-close{width:28px;height:28px;border:1px solid var(--border);background:none;cursor:none;
+  color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.chat-close:hover{border-color:var(--red);color:var(--red);}
+.chat-chips{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;}
+.chat-chip{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.08em;border:1px solid var(--border2);
+  color:var(--muted);padding:4px 10px;cursor:none;background:none;transition:all 0.15s;text-align:left;}
+.chat-chip:hover{border-color:var(--blue2);color:var(--blue2);}
+.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.chat-msg{max-width:88%;}
+.chat-msg.user{align-self:flex-end;}
+.chat-msg.ai{align-self:flex-start;}
+.chat-bubble{padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.8;letter-spacing:0.03em;}
+.chat-bubble.user{background:var(--amber);color:#000;font-weight:500;}
+.chat-bubble.ai{background:var(--surface2);color:var(--text);border:1px solid var(--border2);}
+.chat-bubble.ai.loading{border-color:var(--blue2);}
+.chat-thinking{display:flex;gap:4px;align-items:center;padding:2px 0;}
+.chat-thinking span{width:5px;height:5px;border-radius:50%;background:var(--blue2);animation:chatThink 1s ease infinite;}
+.chat-thinking span:nth-child(2){animation-delay:0.2s;}
+.chat-thinking span:nth-child(3){animation-delay:0.4s;}
+@keyframes chatThink{0%,100%{opacity:0.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+.chat-footer{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;padding:10px 12px;letter-spacing:0.04em;outline:none;resize:none;height:40px;transition:border-color 0.2s;}
+.chat-input:focus{border-color:var(--blue2);}
+.chat-send{min-width:68px;height:40px;padding:0 12px;background:var(--blue2);border:none;cursor:none;color:white;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.08em;flex-shrink:0;transition:background 0.15s;}
+.chat-send:hover{background:var(--blue);}
+
+/* ═══════════════ STATE 1: UPLOAD ═══════════════ */
+#state-upload{display:flex;min-height:100vh;padding-top:54px;}
+#state-upload.hidden,#state-scan.hidden,#state-report.hidden{display:none!important;}
+
+.upload-left{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden;}
+.upload-left::before{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(212,150,10,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(212,150,10,0.04) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;}
+.upload-left::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 40% at 50% 50%,rgba(212,150,10,0.04) 0%,transparent 70%);
+  pointer-events:none;}
+
+.upload-zone{width:100%;max-width:600px;padding:56px 40px;border:2px dashed rgba(212,150,10,0.5);
+  background:rgba(212,150,10,0.02);position:relative;cursor:none;
+  transition:all 0.3s ease;z-index:2;}
+.upload-zone:hover,.upload-zone.dragover{background:rgba(212,150,10,0.06);border-color:var(--amber);
+  box-shadow:0 0 60px rgba(212,150,10,0.08),inset 0 0 30px rgba(212,150,10,0.03);}
+.upload-zone.has-file{border-style:solid;border-color:var(--green);}
+.uz-scan{position:absolute;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--amber),transparent);top:0;
+  animation:uzScan 3s ease-in-out infinite;opacity:0;}
+@keyframes uzScan{0%{top:0;opacity:0}8%{opacity:0.7}92%{opacity:0.7}100%{top:100%;opacity:0}}
+.uc{position:absolute;width:16px;height:16px;border-color:var(--amber);border-style:solid;border-width:0;transition:all 0.3s;}
+.uc.tl{top:-1px;left:-1px;border-top-width:2px;border-left-width:2px;}
+.uc.tr{top:-1px;right:-1px;border-top-width:2px;border-right-width:2px;}
+.uc.bl{bottom:-1px;left:-1px;border-bottom-width:2px;border-left-width:2px;}
+.uc.br{bottom:-1px;right:-1px;border-bottom-width:2px;border-right-width:2px;}
+
+.uz-icon-wrap{display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px;}
+.uz-icon{width:44px;height:44px;position:relative;}
+.uz-icon::before{content:'';position:absolute;width:1px;height:100%;left:50%;top:0;background:var(--amber);}
+.uz-icon::after{content:'';position:absolute;width:100%;height:1px;top:50%;left:0;background:var(--amber);}
+.uz-icon-dot{position:absolute;width:6px;height:6px;background:var(--amber);top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--amber);}
+.uz-cam-btn{min-width:52px;height:44px;padding:0 10px;border:1px solid var(--border2);background:none;cursor:none;
+  color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.08em;display:flex;align-items:center;justify-content:center;transition:all 0.15s;position:relative;z-index:3;}
+.uz-cam-btn:hover{border-color:var(--amber);color:var(--amber);}
+.uz-cam-btn title{display:none;}
+
+.uz-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:38px;color:var(--amber);
+  letter-spacing:0.06em;text-transform:uppercase;text-align:center;margin-bottom:8px;}
+.uz-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:center;letter-spacing:0.08em;}
+.uz-formats{display:flex;gap:6px;justify-content:center;margin-top:14px;}
+.uz-fmt{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);border:1px solid var(--border2);padding:3px 8px;letter-spacing:0.1em;}
+#fileInput{position:absolute;inset:0;opacity:0;cursor:none;width:100%;height:100%;}
+
+.uz-preview{display:none;width:100%;height:160px;background-size:cover;background-position:center;
+  margin-bottom:16px;border:1px solid var(--border2);position:relative;overflow:hidden;}
+.uz-preview.show{display:block;}
+.uz-preview-label{position:absolute;bottom:0;left:0;right:0;background:rgba(6,6,8,0.9);
+  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--green2);padding:5px 10px;letter-spacing:0.1em;}
+.uz-preview-badge{position:absolute;top:8px;right:8px;background:var(--green);color:white;
+  font-family:'IBM Plex Mono',monospace;font-size:8px;padding:2px 8px;letter-spacing:0.1em;}
+
+.analyze-btn{width:100%;max-width:600px;margin-top:14px;padding:18px;
+  background:var(--amber);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  font-size:20px;letter-spacing:0.14em;text-transform:uppercase;border:none;cursor:none;
+  opacity:0.2;pointer-events:none;transition:all 0.2s;
+  position:relative;z-index:2;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));}
+.analyze-btn.active{opacity:1;pointer-events:all;}
+.analyze-btn.active:hover{background:var(--amber2);transform:translateY(-1px);box-shadow:0 8px 40px rgba(212,150,10,0.25);}
+.analyze-btn.active:active{transform:translateY(0);}
+.uz-max{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);text-align:center;
+  margin-top:8px;letter-spacing:0.1em;position:relative;z-index:2;}
+
+/* Camera stream */
+#cameraModal .modal-box{max-width:640px;border-color:var(--border2);}
+#cameraModal .modal-tag{background:var(--surface3);color:var(--amber);}
+#cameraVideo{width:100%;max-height:400px;object-fit:cover;border:1px solid var(--border2);display:block;margin-bottom:12px;}
+
+/* Upload right panel */
+.upload-right{width:320px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);
+  padding:28px 24px;display:flex;flex-direction:column;overflow-y:auto;max-height:calc(100vh - 54px);position:sticky;top:54px;}
+.panel-label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--amber);letter-spacing:0.25em;
+  text-transform:uppercase;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;}
+.check-list{list-style:none;}
+.check-item{padding:9px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;}
+.check-item:last-child{border-bottom:none;}
+.check-bullet{width:4px;height:4px;background:var(--amber);flex-shrink:0;margin-top:5px;}
+.check-name{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--text);display:block;letter-spacing:0.04em;}
+.check-cite{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--amber);display:block;margin-top:1px;letter-spacing:0.08em;}
+.check-desc{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);display:block;margin-top:1px;line-height:1.4;letter-spacing:0.03em;}
+.panel-divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.panel-stat-label{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:3px;}
+.panel-stat-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;color:var(--amber);line-height:1;}
+.panel-powered{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);font-weight:700;letter-spacing:0.05em;}
+.panel-scene-list{display:flex;flex-direction:column;gap:4px;}
+.scene-tag{font-family:'IBM Plex Mono',monospace;font-size:8px;border:1px solid var(--border2);color:var(--muted);
+  padding:3px 8px;letter-spacing:0.08em;display:flex;align-items:center;gap:6px;}
+.scene-tag::before{content:'';width:4px;height:4px;background:var(--muted2);border-radius:50%;}
+.panel-disclaimer{margin-top:auto;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted2);line-height:1.6;letter-spacing:0.03em;}
+
+/* ═══════════════ STATE 2: SCAN ═══════════════ */
+#state-scan{display:flex;min-height:calc(100vh - 54px);margin-top:54px;}
+.scan-left{flex:1;position:relative;overflow:hidden;min-height:400px;}
+.scan-photo{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(0.45);cursor:none;transition:filter 0.3s;}
+.scan-photo:hover{filter:brightness(0.55);}
+.scan-grid{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(212,150,10,0.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(212,150,10,0.05) 1px,transparent 1px);
+  background-size:32px 32px;}
+
+/* Multi-layer sweep */
+.sweep{position:absolute;left:0;right:0;height:2px;z-index:10;top:0;animation:sweepDown 2.2s ease-in-out infinite;}
+.sweep::before{content:'';position:absolute;inset:-12px 0;
+  background:linear-gradient(180deg,transparent,rgba(212,150,10,0.15),rgba(212,150,10,0.6),rgba(212,150,10,0.15),transparent);}
+.sweep::after{content:'';position:absolute;height:1px;inset:0;
+  background:linear-gradient(90deg,transparent,var(--amber),var(--amber2),var(--amber),transparent);
+  box-shadow:0 0 20px var(--amber),0 0 60px rgba(212,150,10,0.3);}
+@keyframes sweepDown{0%{top:0;opacity:0}4%{opacity:1}96%{opacity:1}100%{top:100%;opacity:0}}
+
+.sweep2{position:absolute;left:0;right:0;height:1px;z-index:9;top:0;opacity:0.3;
+  background:rgba(212,150,10,0.4);animation:sweepDown 2.2s ease-in-out 1.1s infinite;}
+
+/* Radar rings */
+.radar-ring{position:absolute;border:1px solid rgba(212,150,10,0.2);border-radius:50%;z-index:7;
+  top:50%;left:50%;transform:translate(-50%,-50%);animation:radarExpand 3s ease-out infinite;}
+.radar-ring:nth-child(2){animation-delay:1s;}
+.radar-ring:nth-child(3){animation-delay:2s;}
+@keyframes radarExpand{0%{width:0;height:0;opacity:0.8}100%{width:140%;height:140%;opacity:0}}
+
+/* Annotations */
+.overlay-layer{position:absolute;inset:0;z-index:8;pointer-events:none;}
+.ann{position:absolute;border:2px solid var(--red);z-index:8;opacity:0;transition:opacity 0.4s ease;pointer-events:none;}
+.ann.show{opacity:1;}
+.ann-label{position:absolute;top:0;left:0;transform:translateY(-100%);
+  background:var(--red);color:white;font-family:'IBM Plex Mono',monospace;
+  font-size:8px;font-weight:700;padding:2px 8px;letter-spacing:0.1em;white-space:nowrap;}
+.ann.amber{border-color:var(--amber);}
+.ann.amber .ann-label{background:var(--amber);color:#000;}
+.ann.ok-ann{border-color:var(--green);}
+.ann.ok-ann .ann-label{background:var(--green);color:white;}
+.ann-pulse{position:absolute;inset:-6px;border:1px solid;border-color:inherit;animation:annPulse 2s ease-out infinite;opacity:0;}
+@keyframes annPulse{0%{inset:-4px;opacity:0.7}100%{inset:-20px;opacity:0}}
+.ann-meta{position:absolute;right:0;bottom:0;transform:translateY(100%);
+  font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--text);
+  background:rgba(6,6,8,0.88);padding:2px 6px;letter-spacing:0.06em;white-space:nowrap;border-top:1px solid currentColor;}
+
+.scan-corner{position:absolute;z-index:9;}
+.scan-corner::before,.scan-corner::after{content:'';position:absolute;background:var(--amber);}
+.scan-corner.tl{top:16px;left:16px;} .scan-corner.tl::before{width:24px;height:2px;top:0;left:0;} .scan-corner.tl::after{width:2px;height:24px;top:0;left:0;}
+.scan-corner.tr{top:16px;right:16px;} .scan-corner.tr::before{width:24px;height:2px;top:0;right:0;} .scan-corner.tr::after{width:2px;height:24px;top:0;right:0;}
+.scan-corner.bl{bottom:50px;left:16px;} .scan-corner.bl::before{width:24px;height:2px;bottom:0;left:0;} .scan-corner.bl::after{width:2px;height:24px;bottom:0;left:0;}
+.scan-corner.br{bottom:50px;right:16px;} .scan-corner.br::before{width:24px;height:2px;bottom:0;right:0;} .scan-corner.br::after{width:2px;height:24px;bottom:0;right:0;}
+
+/* Scene badge */
+.scene-badge{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:11;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;
+  background:rgba(6,6,8,0.9);border:1px solid var(--amber);color:var(--amber);padding:4px 14px;
+  white-space:nowrap;display:none;}
+.scene-badge.show{display:block;}
+
+/* Expand to fullscreen */
+.fs-btn{position:absolute;bottom:60px;right:16px;z-index:12;min-width:56px;height:34px;padding:0 10px;
+  background:rgba(6,6,8,0.8);border:1px solid var(--border2);cursor:none;
+  color:var(--muted);font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.08em;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.fs-btn:hover{border-color:var(--amber);color:var(--amber);}
+
+.scan-progress{position:absolute;bottom:0;left:0;right:0;background:rgba(6,6,8,0.97);
+  border-top:1px solid var(--border2);padding:10px 20px;z-index:12;}
+.prog-track{width:100%;height:2px;background:var(--border2);overflow:hidden;margin-bottom:8px;}
+.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:width 0.6s ease;box-shadow:0 0 8px var(--amber);}
+.prog-bottom{display:flex;justify-content:space-between;align-items:center;}
+.prog-msg{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.08em;}
+.prog-pct{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--amber);font-weight:700;}
+
+/* Scan right */
+.scan-right{width:380px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:400px;}
+.feed-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.feed-title{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--text);letter-spacing:0.2em;}
+.feed-live{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--red);letter-spacing:0.08em;}
+.feed-live-dot{width:5px;height:5px;border-radius:50%;background:var(--red);animation:livePulse 1.1s ease infinite;}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 6px var(--red)}50%{opacity:0.3;box-shadow:none}}
+.feed-body{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.feed-body::-webkit-scrollbar{width:3px;} .feed-body::-webkit-scrollbar-thumb{background:var(--border2);}
+.feed-item{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;
+  opacity:0;transform:translateX(14px);transition:opacity 0.35s,transform 0.35s;}
+.feed-item.show{opacity:1;transform:translateX(0);}
+.fi-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:0.1em;padding:2px 6px;flex-shrink:0;margin-top:1px;}
+.fi-badge.crit{background:var(--red);color:white;}
+.fi-badge.warn{background:var(--amber);color:#000;}
+.fi-badge.ok{background:var(--green);color:white;}
+.fi-badge.sys{border:1px solid var(--border2);color:var(--muted);}
+.fi-badge.scene{border:1px solid var(--blue2);color:var(--blue2);}
+.fi-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--text);letter-spacing:0.03em;line-height:1.3;}
+.fi-cite{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--amber);margin-top:2px;letter-spacing:0.05em;}
+.fi-desc{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-top:2px;line-height:1.5;letter-spacing:0.03em;}
+.feed-tally{padding:14px 20px;border-top:1px solid var(--border2);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0;}
+.tally-item{text-align:center;}
+.tally-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:34px;line-height:1;}
+.tally-num.red{color:var(--red);}
+.tally-num.amb{color:var(--amber);}
+.tally-num.grn{color:var(--green2);}
+.tally-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.1em;display:block;margin-top:2px;}
+
+/* ═══════════════ STATE 3: REPORT ═══════════════ */
+#state-report{display:flex;flex-direction:column;min-height:100vh;padding-top:54px;transition:padding-right 0.35s cubic-bezier(0.16,1,0.3,1);}
+#state-report.chat-open{padding-right:400px;}
+
+.report-topbar{background:var(--amber);padding:0 28px;height:52px;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;position:sticky;top:54px;z-index:100;}
+.rtb-left{display:flex;align-items:center;gap:16px;}
+.rtb-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;color:#000;letter-spacing:0.06em;text-transform:uppercase;}
+.rtb-id{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(0,0,0,0.5);letter-spacing:0.12em;}
+.rtb-actions{display:flex;gap:6px;align-items:center;}
+.rtb-btn{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;
+  letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;cursor:none;border:none;transition:0.15s;white-space:nowrap;}
+.rtb-btn.primary{background:#000;color:var(--amber);}
+.rtb-btn.primary:hover{background:#111;}
+.rtb-btn.outline{background:transparent;border:1.5px solid rgba(0,0,0,0.35);color:#000;}
+.rtb-btn.outline:hover{background:rgba(0,0,0,0.08);}
+.rtb-btn.danger{background:var(--red);color:white;border:none;}
+.rtb-btn.danger:hover{background:var(--red2);}
+.rtb-btn.ai{background:var(--blue2);color:white;border:none;display:flex;align-items:center;gap:6px;}
+.rtb-btn.ai:hover{background:var(--blue);}
+.rtb-btn.ai::before{content:'';}
+
+.filter-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 28px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.filter-label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.2em;flex-shrink:0;}
+.filter-btn{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;
+  padding:4px 11px;border:1px solid var(--border2);background:none;color:var(--muted);cursor:none;transition:all 0.15s;}
+.filter-btn:hover,.filter-btn.active{border-color:var(--amber);color:var(--amber);}
+.filter-btn.active-crit{border-color:var(--red);color:var(--red);background:rgba(193,40,27,0.08);}
+.filter-btn.active-warn{border-color:var(--amber);color:var(--amber);background:rgba(212,150,10,0.08);}
+.filter-btn.active-ok{border-color:var(--green);color:var(--green2);background:rgba(30,122,62,0.08);}
+.filter-sep{width:1px;height:18px;background:var(--border);}
+.sort-select{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.08em;
+  background:none;border:1px solid var(--border2);padding:4px 8px;cursor:none;outline:none;appearance:none;}
+.sort-select option{background:var(--surface);}
+
+/* Brief section */
+.report-brief{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,0.9fr);border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,rgba(212,150,10,0.07),rgba(212,150,10,0.02) 40%,transparent);}
+.brief-main{padding:24px 28px;border-right:1px solid var(--border);}
+.brief-kicker{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--amber);letter-spacing:0.22em;text-transform:uppercase;margin-bottom:8px;}
+.brief-headline{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;line-height:0.95;
+  text-transform:uppercase;letter-spacing:0.02em;color:var(--text);}
+.brief-overview{margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.8;letter-spacing:0.04em;max-width:720px;}
+.brief-stat{margin-top:12px;display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid rgba(193,40,27,0.4);
+  background:rgba(193,40,27,0.08);font-family:'IBM Plex Mono',monospace;font-size:9px;color:#ffd6d2;line-height:1.6;letter-spacing:0.04em;}
+.brief-stat::before{content:'!';display:flex;align-items:center;justify-content:center;width:16px;height:16px;
+  background:var(--red);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:13px;flex-shrink:0;}
+.brief-actions{padding:24px 28px;}
+.brief-actions-title{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--amber);letter-spacing:0.22em;text-transform:uppercase;margin-bottom:12px;}
+.action-list{display:flex;flex-direction:column;gap:8px;}
+.action-item{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--border);background:rgba(17,17,22,0.8);}
+.action-index{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;line-height:1;color:var(--amber);width:18px;flex-shrink:0;}
+.action-text{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text);line-height:1.7;letter-spacing:0.04em;}
+
+/* Report body */
+.report-body{display:grid;grid-template-columns:1fr 360px;flex:1;}
+.report-main{padding:28px;overflow-y:auto;}
+.viol-section-header{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);
+  letter-spacing:0.25em;text-transform:uppercase;margin-bottom:14px;margin-top:24px;
+  display:flex;align-items:center;gap:12px;}
+.viol-section-header:first-child{margin-top:0;}
+.viol-section-header::after{content:'';flex:1;height:1px;background:var(--border);}
+.viol-section-header .count-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;
+  padding:2px 8px;border:1px solid;border-radius:0;}
+.viol-section-header.crit-head .count-badge{border-color:var(--red);color:var(--red);}
+.viol-section-header.warn-head .count-badge{border-color:var(--amber);color:var(--amber);}
+.viol-section-header.ok-head .count-badge{border-color:var(--green);color:var(--green2);}
+
+/* V-Cards */
+.v-card{border:1px solid var(--border);margin-bottom:8px;background:var(--surface);
+  transition:border-color 0.2s,transform 0.15s,box-shadow 0.2s;position:relative;overflow:hidden;}
+.v-card:hover{border-color:var(--border3);transform:translateY(-1px);box-shadow:0 4px 24px rgba(0,0,0,0.3);}
+.v-left{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.v-card.crit .v-left{background:var(--red);box-shadow:2px 0 12px rgba(193,40,27,0.3);}
+.v-card.warn .v-left{background:var(--amber);box-shadow:2px 0 12px rgba(212,150,10,0.3);}
+.v-card.ok .v-left{background:var(--green);}
+.v-inner{padding:16px 18px 16px 22px;}
+.v-top{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.v-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:0.12em;padding:2px 8px;}
+.v-badge.crit{background:var(--red);color:white;}
+.v-badge.warn{background:var(--amber);color:#000;}
+.v-badge.ok{background:var(--green);color:white;}
+.v-element{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text);}
+.v-standard{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--amber);margin-left:auto;letter-spacing:0.08em;}
+.v-grid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);}
+.v-cell{padding:8px 10px;border-right:1px solid var(--border);}
+.v-cell:last-child{border-right:none;}
+.v-key{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;display:block;margin-bottom:3px;}
+.v-val{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text);font-weight:500;line-height:1.3;}
+.v-val.amber{color:var(--amber);font-weight:700;}
+.v-val.red{color:var(--red);}
+.v-val.green{color:var(--green2);}
+.v-desc{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);line-height:1.7;letter-spacing:0.03em;}
+.v-contractor{margin-top:8px;background:var(--surface2);border:1px solid var(--border);
+  padding:7px 10px;display:flex;gap:14px;align-items:center;}
+.v-contractor-icon{width:22px;height:22px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.v-contractor-icon::before{content:'';width:8px;height:8px;border:1px solid var(--amber);}
+.vc-label{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:0.1em;display:block;}
+.vc-val{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text);font-weight:700;letter-spacing:0.04em;}
+.v-actions{margin-top:8px;display:flex;gap:6px;}
+.v-action-btn{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;
+  padding:4px 10px;border:1px solid var(--border2);background:none;color:var(--muted);cursor:none;transition:all 0.15s;}
+.v-action-btn:hover{border-color:var(--blue2);color:var(--blue2);}
+.v-action-btn.copy-btn:hover{border-color:var(--green);color:var(--green2);}
+
+.compliant-toggle{display:flex;align-items:center;gap:10px;cursor:none;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.18em;text-transform:uppercase;
+  padding:12px 0;border-top:1px solid var(--border);margin-top:8px;transition:color 0.2s;
+  background:none;border-bottom:1px solid var(--border);border-left:none;border-right:none;width:100%;text-align:left;}
+.compliant-toggle:hover{color:var(--green2);}
+.ct-arrow{transition:transform 0.2s;font-size:14px;line-height:1;}
+#compliant-cards{display:none;}
+#compliant-cards.open{display:block;padding-top:8px;}
+
+/* SIDEBAR */
+.report-sidebar{background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;position:sticky;top:106px;max-height:calc(100vh - 106px);}
+.sb-label{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--amber);letter-spacing:0.28em;text-transform:uppercase;margin-bottom:10px;}
+
+/* Risk gauge */
+.sidebar-risk{padding:24px 20px;border-bottom:1px solid var(--border);}
+.risk-ring-wrap{position:relative;width:130px;height:130px;margin:0 auto 14px;}
+.risk-ring-wrap svg{transform:rotate(-90deg);}
+.risk-ring-bg{fill:none;stroke:var(--border2);stroke-width:8;}
+.risk-ring-fill{fill:none;stroke-width:8;stroke-linecap:butt;stroke-dasharray:358;stroke-dashoffset:358;
+  transition:stroke-dashoffset 1.6s cubic-bezier(0.16,1,0.3,1);}
+.risk-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.risk-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:46px;line-height:1;letter-spacing:-0.03em;}
+.risk-label-s{font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:0.15em;margin-top:1px;color:var(--muted);}
+.risk-verdict{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;text-transform:uppercase;
+  letter-spacing:0.03em;line-height:1;text-align:center;}
+.risk-verdict.low{color:var(--green2);}
+.risk-verdict.moderate{color:var(--amber);}
+.risk-verdict.high{color:var(--red);}
+.risk-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-top:6px;line-height:1.5;letter-spacing:0.03em;text-align:center;}
+.risk-narrative{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted2);line-height:1.7;letter-spacing:0.03em;}
+
+/* Cost bars */
+.sidebar-costs{padding:18px 20px;border-bottom:1px solid var(--border);}
+.cost-bar-row{margin-bottom:8px;}
+.cost-bar-label{display:flex;justify-content:space-between;margin-bottom:3px;}
+.cost-bar-key{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;}
+.cost-bar-val{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--text);font-weight:700;}
+.cost-bar-track{height:3px;background:var(--border2);overflow:hidden;}
+.cost-bar-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber2));width:0%;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);}
+.cost-bar-fill.red{background:linear-gradient(90deg,var(--red),var(--red2));}
+.cost-total-row{display:flex;justify-content:space-between;padding:8px 10px;margin-top:12px;
+  background:var(--surface2);border:1px solid var(--border2);}
+.cost-total-key{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.1em;}
+.cost-total-val{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--amber);font-weight:700;}
+.cost-note{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted2);line-height:1.6;letter-spacing:0.03em;}
+
+/* Priority queue */
+.sidebar-priority{padding:18px 20px;border-bottom:1px solid var(--border);}
+.priority-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.priority-item:last-child{border-bottom:none;}
+.priority-rank{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:var(--border3);line-height:1;flex-shrink:0;width:20px;}
+.priority-content{}
+.priority-name{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:var(--text);letter-spacing:0.04em;display:block;}
+.priority-why{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:0.03em;margin-top:2px;line-height:1.4;}
+
+.sidebar-next{padding:18px 20px;border-bottom:1px solid var(--border);}
+.next-steps{display:flex;flex-direction:column;gap:8px;}
+.next-step{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.next-step:last-child{border-bottom:none;padding-bottom:0;}
+.next-step-marker{width:6px;height:6px;border:1px solid var(--amber);margin-top:5px;flex-shrink:0;}
+.next-step-text{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--text);line-height:1.7;letter-spacing:0.03em;}
+
+.sidebar-actions{padding:18px 20px;display:flex;flex-direction:column;gap:6px;}
+.sb-btn{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:13px;
+  letter-spacing:0.1em;text-transform:uppercase;padding:10px 14px;border:none;cursor:none;
+  text-align:left;transition:0.15s;display:flex;align-items:center;gap:8px;}
+.sb-btn::before{content:'';width:5px;height:5px;border:1px solid currentColor;flex-shrink:0;}
+.sb-btn.primary{background:var(--amber);color:#000;}
+.sb-btn.primary:hover{background:var(--amber2);}
+.sb-btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border2);}
+.sb-btn.secondary:hover{border-color:var(--text);}
+.sb-btn.ghost{background:none;color:var(--muted);border:1px solid var(--border);}
+.sb-btn.ghost:hover{color:var(--amber);border-color:var(--amber);}
+.sb-btn.ai-btn{background:var(--blue2);color:white;border:none;}
+.sb-btn.ai-btn:hover{background:var(--blue);}
+
+.cert-box{margin:18px 20px;border:1px solid var(--border);padding:14px;position:relative;background:var(--surface2);}
+.cert-box::before{content:'';position:absolute;inset:4px;border:1px solid var(--border);pointer-events:none;}
+.cert-title{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:700;color:var(--muted);letter-spacing:0.2em;text-align:center;text-transform:uppercase;margin-bottom:6px;}
+.cert-id{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--amber);text-align:center;letter-spacing:0.1em;font-weight:700;}
+.cert-date{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted2);text-align:center;margin-top:3px;letter-spacing:0.08em;}
+.cert-status{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;text-transform:uppercase;text-align:center;margin-top:7px;letter-spacing:0.04em;}
+.cert-status.pending{color:var(--amber);}
+.cert-status.flagged{color:#fff;background:var(--red);padding:6px 10px;display:block;box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset;}
+.cert-status.clear{color:var(--green2);}
+.cert-note{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--muted);line-height:1.6;letter-spacing:0.03em;}
+
+.report-footer{padding:20px 28px;border-top:1px solid var(--border);background:var(--surface);
+  display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
+.rf-disc{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted2);line-height:1.6;max-width:540px;letter-spacing:0.03em;}
+.rf-again{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--amber);text-decoration:none;cursor:none;
+  border-bottom:1px solid var(--amber);padding-bottom:1px;transition:opacity 0.2s;}
+.rf-again:hover{opacity:0.7;}
+
+/* ── ERROR / TOAST ── */
+.error-overlay{position:fixed;inset:0;z-index:8000;background:rgba(6,6,8,0.97);display:none;align-items:center;justify-content:center;}
+.error-overlay.show{display:flex;}
+.err-inner{border:1px solid var(--red);padding:44px;max-width:480px;width:90%;position:relative;animation:modalIn 0.2s ease;}
+.err-inner::before{content:'ANALYSIS ERROR';position:absolute;top:-1px;left:20px;
+  background:var(--red);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;padding:2px 10px;letter-spacing:0.2em;}
+.err-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;color:var(--red);text-transform:uppercase;margin-bottom:8px;}
+.err-msg{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.7;margin-bottom:22px;letter-spacing:0.03em;}
+.err-actions{display:flex;gap:10px;}
+.err-btn{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.1em;text-transform:uppercase;padding:10px 22px;cursor:none;border:none;}
+.err-btn.primary{background:var(--amber);color:#000;}
+.err-btn.secondary{background:transparent;border:1px solid var(--border2);color:var(--muted);}
+.toast{position:fixed;bottom:24px;right:24px;z-index:9000;background:var(--surface2);border:1px solid var(--amber);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text);padding:10px 16px;letter-spacing:0.08em;
+  transform:translateY(20px);opacity:0;transition:transform 0.3s,opacity 0.3s;pointer-events:none;max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error-toast{border-color:var(--red);}
+.toast.ok-toast{border-color:var(--green);}
+
+/* Print */
+@media print{
+  body{background:white;color:#000;cursor:default;}
+  nav,.report-topbar,.filter-bar,.rtb-actions,.sidebar-actions,.report-footer,.stripe,
+  #cur,#cur-dot,.toast,.modal-overlay,.error-overlay,#chatPanel,.v-action-btn{display:none!important;}
+  #state-upload,#state-scan{display:none!important;}
+  #state-report{padding-top:0;padding-right:0!important;}
+  .report-body{display:block;}
+  .report-sidebar{position:static;max-height:none;border:none;}
+  .v-card{break-inside:avoid;border:1px solid #ccc;}
+}
+@media(max-width:1100px){
+  .report-brief{grid-template-columns:1fr;}
+  .brief-main{border-right:none;border-bottom:1px solid var(--border);}
+  .report-body{grid-template-columns:1fr;}
+  .report-sidebar{position:static;max-height:none;}
+  #state-report.chat-open{padding-right:0;}
+}
+@media(max-width:860px){
+  #state-upload{flex-direction:column;}
+  .upload-right{width:100%;border-left:none;border-top:1px solid var(--border);position:static;}
+  #state-scan{flex-direction:column;}
+  .scan-right{width:100%;}
+  .v-grid{grid-template-columns:repeat(2,1fr);}
+  nav{padding:0 16px;}
+  .nav-center{display:none;}
+  #chatPanel{width:100%;top:auto;bottom:0;height:60vh;transform:translateY(100%);}
+  #chatPanel.open{transform:translateY(0);}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-dot"></div>
+<div class="stripe"><div class="stripe-fill" id="stripeFill"></div></div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo"><div class="nav-logo-dot"></div>ACCESS<span>MAP</span></a>
+  <div class="nav-center">
+    <div class="nav-step-item active" id="navS1"><div class="nav-step-dot"></div>01 - UPLOAD</div>
+    <div class="nav-step-item" id="navS2"><div class="nav-step-dot"></div>02 - ANALYZE</div>
+    <div class="nav-step-item" id="navS3"><div class="nav-step-dot"></div>03 - REPORT</div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-badge demo" id="demoBadge">DEMO</div>
+    <div class="nav-badge live" id="liveBadge">LIVE</div>
+  </div>
+</nav>
+
+<!-- CAMERA MODAL -->
+<div class="modal-overlay" id="cameraModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-tag" style="background:var(--surface3);color:var(--amber);">CAMERA CAPTURE</div>
+    <div class="modal-title">CAPTURE SPACE</div>
+    <video id="cameraVideo" autoplay playsinline></video>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="capturePhoto()">CAPTURE PHOTO</button>
+      <button class="modal-btn ghost" onclick="closeCamera()">CANCEL</button>
+    </div>
+    <canvas id="cameraCanvas" style="display:none;"></canvas>
+  </div>
+</div>
+
+<!-- FIX GUIDE MODAL -->
+<div class="modal-overlay" id="fixModal">
+  <div class="modal-box">
+    <div class="modal-tag" style="background:var(--blue2);">REMEDIATION GUIDE</div>
+    <div class="modal-title" id="fixModalTitle">HOW TO FIX</div>
+    <div id="fixModalBody">
+      <div class="fix-loading">
+        <div class="fix-loading-dot"></div>
+        <div class="fix-loading-dot"></div>
+        <div class="fix-loading-dot"></div>
+        <span>Generating remediation guide...</span>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="modal-btn ghost" onclick="document.getElementById('fixModal').classList.remove('show')">CLOSE</button>
+      <button class="modal-btn primary" id="copyFixBtn" onclick="copyFixGuide()" style="display:none;">COPY GUIDE</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULLSCREEN IMAGE MODAL -->
+<div class="modal-overlay" id="fsModal">
+  <div class="fs-wrap" id="fsWrap">
+    <img id="fsPhoto" src="" alt="Full scan">
+    <div class="overlay-layer fs-overlay-layer" id="fsOverlay"></div>
+  </div>
+  <button class="fs-close" onclick="document.getElementById('fsModal').classList.remove('show')">X</button>
+</div>
+
+<!-- ERROR OVERLAY -->
+<div class="error-overlay" id="errorOverlay">
+  <div class="err-inner">
+    <div class="err-title">ANALYSIS FAILED</div>
+    <div class="err-msg" id="errMsg">Unable to analyze this image.</div>
+    <div class="err-actions">
+      <button class="err-btn primary" onclick="retryAnalysis()">RETRY</button>
+      <button class="err-btn secondary" onclick="resetToUpload()">NEW PHOTO</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- AI CHAT PANEL -->
+<div id="chatPanel">
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <div class="chat-ai-dot"></div>
+      <div class="chat-title">ASK AI - REPORT ANALYSIS</div>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">X</button>
+  </div>
+  <div class="chat-chips">
+    <button class="chat-chip" onclick="sendChip('What is my biggest legal risk from these findings?')">Biggest risk?</button>
+    <button class="chat-chip" onclick="sendChip('Which fixes can I do without hiring a contractor?')">DIY fixes?</button>
+    <button class="chat-chip" onclick="sendChip('Write a contractor work brief for the highest priority finding.')">Contractor brief</button>
+    <button class="chat-chip" onclick="sendChip('What ADA fines am I exposed to based on these violations?')">Fine exposure</button>
+    <button class="chat-chip" onclick="sendChip('Prioritize these fixes by lowest cost first.')">Cost-order fixes</button>
+    <button class="chat-chip" onclick="sendChip('What should I tell the property owner about these violations?')">Owner letter</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-footer">
+    <textarea class="chat-input" id="chatInput" placeholder="Ask anything about this report..." rows="1" onkeydown="chatKeydown(event)"></textarea>
+    <button class="chat-send" onclick="sendChatMessage()">SEND</button>
+  </div>
+</div>
+
+<!-- ═══ STATE 1: UPLOAD ═══ -->
+<div id="state-upload">
+  <div class="upload-left">
+    <div class="upload-zone" id="uploadZone">
+      <div class="uz-scan"></div>
+      <div class="uc tl"></div><div class="uc tr"></div><div class="uc bl"></div><div class="uc br"></div>
+      <input type="file" id="fileInput" accept="image/*">
+      <div class="uz-preview" id="uzPreview">
+        <div class="uz-preview-badge">READY</div>
+        <div class="uz-preview-label" id="uzPreviewLabel"></div>
+      </div>
+      <div id="uzContent">
+        <div class="uz-icon-wrap">
+          <div class="uz-icon"><div class="uz-icon-dot"></div></div>
+          <button class="uz-cam-btn" onclick="openCamera(event)" title="Use camera">CAM</button>
+        </div>
+        <div class="uz-title">DROP PHOTO HERE</div>
+        <div class="uz-sub">or click to select or use camera</div>
+        <div class="uz-formats">
+          <span class="uz-fmt">JPG</span>
+          <span class="uz-fmt">PNG</span>
+          <span class="uz-fmt">WEBP</span>
+          <span class="uz-fmt">HEIC</span>
+        </div>
+      </div>
+    </div>
+    <button class="analyze-btn" id="analyzeBtn" onclick="startAnalysis()">ANALYZE SPACE</button>
+    <div class="uz-max">// MAX 20MB - GEMINI 2.5 FLASH VISION - 3-PASS ANALYSIS</div>
+  </div>
+
+  <aside class="upload-right">
+    <div class="panel-label">WHAT WE DETECT</div>
+    <ul class="check-list">
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">ACCESSIBLE PARKING</span><span class="check-cite">§ 502</span><span class="check-desc">Spaces, aisles, signs, obstructions</span></div></li>
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">RAMP RUNNING SLOPES</span><span class="check-cite">§ 405.2</span><span class="check-desc">Max 1:12 slope, handrails, edge protection</span></div></li>
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">CURB RAMPS & CROSSINGS</span><span class="check-cite">§ 406, 705</span><span class="check-desc">Detectable warnings, surface condition</span></div></li>
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">DOOR CLEAR WIDTHS</span><span class="check-cite">§ 404.2.3</span><span class="check-desc">32in min clear, hardware, thresholds</span></div></li>
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">RESTROOM FIXTURES</span><span class="check-cite">§ 603–608</span><span class="check-desc">Grab bars, clearances, reach ranges</span></div></li>
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">PATH OF TRAVEL</span><span class="check-cite">§ 402</span><span class="check-desc">36in min width, surface stability</span></div></li>
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">DYNAMIC OBSTRUCTIONS</span><span class="check-cite">§ 502.3</span><span class="check-desc">Vehicles, objects blocking access</span></div></li>
+      <li class="check-item"><div class="check-bullet"></div><div><span class="check-name">SIGNAGE & WAYFINDING</span><span class="check-cite">§ 703</span><span class="check-desc">Mounting height, braille, ISA symbols</span></div></li>
+    </ul>
+    <hr class="panel-divider">
+    <div class="panel-label">SCENE TYPES SUPPORTED</div>
+    <div class="panel-scene-list">
+      <div class="scene-tag">Parking lots & garages</div>
+      <div class="scene-tag">Building entrances</div>
+      <div class="scene-tag">Corridors & lobbies</div>
+      <div class="scene-tag">Restrooms</div>
+      <div class="scene-tag">Ramps & stairways</div>
+      <div class="scene-tag">Sidewalks & crosswalks</div>
+      <div class="scene-tag">Elevators</div>
+      <div class="scene-tag">Retail counters</div>
+    </div>
+    <hr class="panel-divider">
+    <div class="panel-stat-label">ANALYSIS TIME</div>
+    <div class="panel-stat-val">&lt;30s</div>
+    <hr class="panel-divider">
+    <div class="panel-stat-label">POWERED BY</div>
+    <div class="panel-powered">GEMINI 2.5 FLASH</div>
+    <div class="panel-disclaimer">// AI analysis is a preliminary assessment only. Not a substitute for a certified ADA inspector. Use as initial screening.</div>
+  </aside>
+</div>
+
+<!-- ═══ STATE 2: SCAN ═══ -->
+<div id="state-scan" class="hidden">
+  <div class="scan-left">
+    <div class="scan-photo" id="scanPhoto"></div>
+    <div class="scan-grid"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="sweep"></div>
+    <div class="sweep2"></div>
+    <div class="overlay-layer" id="overlayLayer"></div>
+    <div class="scene-badge" id="sceneBadge">DETECTING SCENE...</div>
+    <div class="scan-corner tl"></div>
+    <div class="scan-corner tr"></div>
+    <div class="scan-corner bl"></div>
+    <div class="scan-corner br"></div>
+    <button class="fs-btn" onclick="openFullscreen()" title="Fullscreen">FULL</button>
+    <div class="scan-progress">
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-bottom">
+        <span class="prog-msg" id="progMsg">INITIALIZING...</span>
+        <span class="prog-pct" id="progPct">0%</span>
+      </div>
+    </div>
+  </div>
+  <div class="scan-right">
+    <div class="feed-header">
+      <span class="feed-title">LIVE ANALYSIS FEED</span>
+      <span class="feed-live"><span class="feed-live-dot"></span>SCANNING</span>
+    </div>
+    <div class="feed-body" id="feedBody"></div>
+    <div class="feed-tally">
+      <div class="tally-item"><div class="tally-num red" id="tc">0</div><span class="tally-lbl">CRITICAL</span></div>
+      <div class="tally-item"><div class="tally-num amb" id="tw">0</div><span class="tally-lbl">WARNINGS</span></div>
+      <div class="tally-item"><div class="tally-num grn" id="tok">0</div><span class="tally-lbl">COMPLIANT</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STATE 3: REPORT ═══ -->
+<div id="state-report" class="hidden">
+  <div class="report-topbar">
+    <div class="rtb-left">
+      <span class="rtb-title" id="rtbTitle">REPORT</span>
+      <span class="rtb-id" id="rtbId"></span>
+    </div>
+    <div class="rtb-actions">
+      <button class="rtb-btn ai" onclick="toggleChat()">ASK AI</button>
+      <button class="rtb-btn outline" onclick="copyShareLink()">SHARE</button>
+      <button class="rtb-btn primary" onclick="exportPDF()">EXPORT PDF</button>
+      <button class="rtb-btn danger" onclick="resetToUpload()">NEW SCAN</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">FILTER:</span>
+    <button class="filter-btn active-crit" id="fAll" onclick="setFilter('all')">ALL</button>
+    <button class="filter-btn" id="fCrit" onclick="setFilter('crit')">CRITICAL ONLY</button>
+    <button class="filter-btn" id="fWarn" onclick="setFilter('warn')">WARNINGS</button>
+    <div class="filter-sep"></div>
+    <span class="filter-label">SORT:</span>
+    <select class="sort-select" id="sortSelect" onchange="applySort()">
+      <option value="severity">BY SEVERITY</option>
+      <option value="cost">BY FIX COST</option>
+      <option value="standard">BY ADA SECTION</option>
+    </select>
+  </div>
+
+  <div class="report-brief">
+    <div class="brief-main">
+      <div class="brief-kicker">GEMINI SCENE SUMMARY</div>
+      <h1 class="brief-headline" id="reportHeadline">ANALYZING...</h1>
+      <p class="brief-overview" id="reportOverview"></p>
+      <div class="brief-stat" id="reportImpactStat">ADA Title III violations can trigger DOJ civil penalties up to $90,535 for a first violation and $181,071 for later violations.</div>
+    </div>
+    <div class="brief-actions">
+      <div class="brief-actions-title">IMMEDIATE ACTIONS</div>
+      <div class="action-list" id="reportActions"></div>
+    </div>
+  </div>
+
+  <div class="report-body">
+    <div class="report-main" id="reportMain">
+      <div class="viol-section-header crit-head" id="critHeader">CRITICAL VIOLATIONS <span class="count-badge" id="critCount">0</span></div>
+      <div id="critCards"></div>
+      <div class="viol-section-header warn-head" id="warnHeader" style="margin-top:24px;">WARNINGS <span class="count-badge" id="warnCount">0</span></div>
+      <div id="warnCards"></div>
+      <button class="compliant-toggle" id="compliantToggle" onclick="toggleCompliant()">
+        <span class="ct-arrow" id="ctArrow">></span>
+        COMPLIANT ELEMENTS &nbsp;(<span id="okCount">0</span>)
+      </button>
+      <div id="compliant-cards"></div>
+    </div>
+    <div class="report-sidebar">
+      <div class="sidebar-risk">
+        <div class="sb-label">LEGAL RISK SCORE</div>
+        <div class="risk-ring-wrap">
+          <svg width="130" height="130" viewBox="0 0 130 130">
+            <circle class="risk-ring-bg" cx="65" cy="65" r="57"/>
+            <circle class="risk-ring-fill" id="riskRing" cx="65" cy="65" r="57"/>
+          </svg>
+          <div class="risk-center">
+            <div class="risk-num" id="riskNum">0</div>
+            <div class="risk-label-s">/100</div>
+          </div>
+        </div>
+        <div class="risk-verdict" id="riskVerdict">CALCULATING</div>
+        <div class="risk-sub" id="riskSub">—</div>
+        <div class="risk-narrative" id="riskNarrative"></div>
+      </div>
+      <div class="sidebar-costs">
+        <div class="sb-label">FIX COST ESTIMATE</div>
+        <div id="costBars"></div>
+        <div class="cost-total-row">
+          <span class="cost-total-key">TOTAL RANGE</span>
+          <span class="cost-total-val" id="costTotal">—</span>
+        </div>
+        <div class="cost-note" id="costNote"></div>
+      </div>
+      <div class="sidebar-priority">
+        <div class="sb-label">FIX PRIORITY QUEUE</div>
+        <div id="priorityList"></div>
+      </div>
+      <div class="sidebar-next">
+        <div class="sb-label">NEXT STEPS</div>
+        <div class="next-steps" id="nextStepsList"></div>
+      </div>
+      <div class="cert-box">
+        <div class="cert-title">ACCESSMAP ASSESSMENT</div>
+        <div class="cert-id" id="certId">—</div>
+        <div class="cert-date" id="certDate">—</div>
+        <div class="cert-status" id="certStatus">—</div>
+        <div class="cert-note" id="certNote"></div>
+      </div>
+      <div class="sidebar-actions">
+        <button class="sb-btn ai-btn" onclick="toggleChat()">ASK AI ABOUT THIS REPORT</button>
+        <button class="sb-btn primary" onclick="exportPDF()">EXPORT FULL REPORT (PDF)</button>
+        <button class="sb-btn secondary" onclick="copyShareLink()">COPY SHARE LINK</button>
+        <button class="sb-btn ghost" onclick="resetToUpload()">SCAN ANOTHER SPACE</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="report-footer">
+    <div class="rf-disc" id="rfDisc">// AI-generated preliminary assessment only. Not a substitute for a certified ADA compliance inspector. Always verify with physical measurement.</div>
+    <a href="#" class="rf-again" onclick="resetToUpload();return false;">SCAN ANOTHER SPACE</a>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CURSOR
+// ═══════════════════════════════════════════════════════
+const curEl = document.getElementById('cur'), dotEl = document.getElementById('cur-dot');
+let mx = 0, my = 0, cx = 0, cy = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dotEl.style.left = mx + 'px'; dotEl.style.top = my + 'px'; });
+(function anim() { cx += (mx - cx) * 0.12; cy += (my - cy) * 0.12; curEl.style.left = cx + 'px'; curEl.style.top = cy + 'px'; requestAnimationFrame(anim); })();
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+const LOCAL = 'http://127.0.0.1:3000';
+let selectedFile = null, imageBase64 = null, imageDataUrl = null;
+let analysisData = [], latestAnalysis = null, isDemoMode = false;
+let reportId = '', activeFilter = 'all', scanInterval = null;
+let cameraStream = null, fixGuideText = '';
+let chatHistory = [];
+
+// ═══════════════════════════════════════════════════════
+//  API KEY
+// ═══════════════════════════════════════════════════════
+function runDemoMode() {
+  isDemoMode = true;
+  document.getElementById('demoBadge').classList.add('show');
+  if (selectedFile) enableAnalyzeBtn();
+  showToast('// DEMO MODE ACTIVE');
+}
+document.getElementById('fixModal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('show'); });
+document.getElementById('fsModal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('show'); });
+
+// ═══════════════════════════════════════════════════════
+//  FILE HANDLING
+// ═══════════════════════════════════════════════════════
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+const overlayLayer = document.getElementById('overlayLayer');
+
+uploadZone.addEventListener('click', e => { if (e.target !== fileInput && !e.target.closest('.uz-cam-btn')) fileInput.click(); });
+fileInput.addEventListener('click', e => { e.stopPropagation(); e.target.value = ''; });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(ev => uploadZone.addEventListener(ev, e => { e.preventDefault(); uploadZone.classList.add('dragover'); }));
+['dragleave','dragend'].forEach(ev => uploadZone.addEventListener(ev, () => uploadZone.classList.remove('dragover')));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) { showToast('// IMAGE FILES ONLY', 'error'); return; }
+  if (file.size > 20 * 1024 * 1024) { showToast('// FILE TOO LARGE - MAX 20MB', 'error'); return; }
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageDataUrl = e.target.result;
+    imageBase64 = e.target.result.split(',')[1];
+    document.getElementById('scanPhoto').style.backgroundImage = `url(${imageDataUrl})`;
+    document.getElementById('fsPhoto').src = imageDataUrl;
+    const preview = document.getElementById('uzPreview');
+    preview.style.backgroundImage = `url(${imageDataUrl})`;
+    document.getElementById('uzPreviewLabel').textContent = `// ${file.name} - ${(file.size/1024).toFixed(0)}KB`;
+    preview.classList.add('show');
+    document.getElementById('uzContent').style.display = 'none';
+    uploadZone.classList.add('has-file');
+    enableAnalyzeBtn();
+  };
+  reader.readAsDataURL(file);
+}
+function enableAnalyzeBtn() { document.getElementById('analyzeBtn').classList.add('active'); }
+
+// ═══════════════════════════════════════════════════════
+//  CAMERA
+// ═══════════════════════════════════════════════════════
+function openCamera(e) {
+  e.stopPropagation();
+  if (!navigator.mediaDevices?.getUserMedia) { showToast('// CAMERA NOT AVAILABLE', 'error'); return; }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      cameraStream = stream;
+      document.getElementById('cameraVideo').srcObject = stream;
+      document.getElementById('cameraModal').classList.add('show');
+    })
+    .catch(() => showToast('// CAMERA PERMISSION DENIED', 'error'));
+}
+function capturePhoto() {
+  const video = document.getElementById('cameraVideo');
+  const canvas = document.getElementById('cameraCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+    closeCamera();
+    handleFile(file);
+  }, 'image/jpeg', 0.95);
+}
+function closeCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  document.getElementById('cameraModal').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════
+//  START ANALYSIS
+// ═══════════════════════════════════════════════════════
+function startAnalysis() {
+  if (!selectedFile && !isDemoMode) return;
+  showState('scan');
+  setNavStep(2);
+  setStripe(20);
+  runScanAnim();
+  callServerAnalyze();
+}
+
+const SCAN_STEPS = [
+  { p: 5,  m: 'CLASSIFYING SCENE TYPE...' },
+  { p: 12, m: 'GEMINI 2.5 FLASH VISION ACTIVE...' },
+  { p: 22, m: 'DETECTING SPATIAL ELEMENTS...' },
+  { p: 35, m: 'CROSS-REFERENCING ADA 2010 STANDARDS...' },
+  { p: 48, m: 'CHECKING DYNAMIC OBSTRUCTIONS...' },
+  { p: 60, m: 'ANALYZING SIGNAGE & MARKINGS...' },
+  { p: 72, m: 'RUNNING LEGAL RISK ASSESSMENT...' },
+  { p: 82, m: 'GENERATING BOUNDING BOX OVERLAYS...' },
+  { p: 91, m: 'COMPILING COMPLIANCE REPORT...' },
+  { p: 97, m: 'FINALIZING ANALYSIS...' },
+];
+
+function runScanAnim() {
+  let idx = 0;
+  scanInterval = setInterval(() => {
+    if (idx >= SCAN_STEPS.length) { clearInterval(scanInterval); return; }
+    const s = SCAN_STEPS[idx++];
+    setProgress(s.p, s.m);
+    setStripe(10 + s.p * 0.7);
+  }, 900);
+  const sysMsgs = [
+    { delay: 500,  t: 'sys',   title: 'GEMINI 2.5 FLASH ACTIVE',       desc: 'Full-resolution image loaded for analysis.' },
+    { delay: 1200, t: 'scene', title: 'SCENE CLASSIFICATION PASS',      desc: 'Identifying space type for targeted checklist.' },
+    { delay: 2200, t: 'sys',   title: 'ADA DATABASE LOADED',            desc: '847 federal accessibility standards indexed.' },
+    { delay: 3400, t: 'sys',   title: 'OBSTRUCTION SCAN INITIATED',     desc: 'Checking for vehicles and objects blocking access.' },
+    { delay: 4800, t: 'sys',   title: 'COMPLIANCE ENGINE RUNNING',      desc: 'Scene-specific ADA checklist in progress.' },
+  ];
+  sysMsgs.forEach(m => setTimeout(() => addFeedItem(m.t, m.title, m.desc, ''), m.delay));
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = pct + '%';
+  document.getElementById('progMsg').textContent = msg;
+}
+
+function addFeedItem(type, title, desc, cite) {
+  const feed = document.getElementById('feedBody');
+  const el = document.createElement('div');
+  el.className = 'feed-item';
+  el.innerHTML = `<span class="fi-badge ${type}">${type.toUpperCase()}</span>
+    <div><div class="fi-title">${title}</div>${cite ? `<div class="fi-cite">${cite}</div>` : ''}${desc ? `<div class="fi-desc">${desc}</div>` : ''}</div>`;
+  feed.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════════
+//  SERVER CALL
+// ═══════════════════════════════════════════════════════
+async function callServerAnalyze() {
+  try {
+    const endpoint = window.location.protocol === 'file:' ? `${LOCAL}/api/analyze` : '/api/analyze';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mimeType: selectedFile.type, imageBase64, isDemoMode })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    const analysis = normalizeClientAnalysis(data);
+    if (!analysis.findings.length) throw new Error('No findings returned');
+    handleResult(analysis);
+  } catch (err) {
+    clearInterval(scanInterval);
+    let msg = err.message || 'Analysis failed';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) msg = 'Server not reachable. Run "npm start" and open http://127.0.0.1:3000/annalyzer.html';
+    else if (msg.includes('API_KEY') || msg.includes('401')) msg = 'Invalid Gemini API key. Check your server .env configuration.';
+    else if (msg.includes('quota') || msg.includes('429')) msg = 'Gemini quota exceeded. Try again in a moment.';
+    document.getElementById('errMsg').textContent = msg;
+    document.getElementById('errorOverlay').classList.add('show');
+  }
+}
+function retryAnalysis() {
+  document.getElementById('errorOverlay').classList.remove('show');
+  startAnalysis();
+}
+
+// ═══════════════════════════════════════════════════════
+//  CLIENT-SIDE NORMALIZATION (safety net)
+// ═══════════════════════════════════════════════════════
+function normalizeClientAnalysis(payload) {
+  const findings = Array.isArray(payload?.findings)
+    ? payload.findings.map((f, i) => normalizeClientFinding(f, i)).filter(Boolean)
+    : [];
+  return {
+    summary: payload?.summary || { headline: 'Accessibility Assessment', overview: '', immediateActions: [] },
+    report: payload?.report || buildFallbackReport(findings),
+    findings
+  };
+}
+
+function normalizeClientFinding(f, i) {
+  if (!f || typeof f !== 'object') return null;
+  const type = ['critical','warning','compliant'].includes(f.type) ? f.type : 'warning';
+  return {
+    id: f.id || `F${i+1}`,
+    type, element: f.element || 'Element',
+    standard: f.standard || '', title: f.title || f.element || 'Finding',
+    description: f.description || '', required: f.required || '', detected: f.detected || '',
+    fixCost: f.fixCost || null, contractor: f.contractor || null, timeline: f.timeline || null,
+    priority: Math.max(1, Math.min(10, Number(f.priority) || (type==='critical'?8:type==='warning'?5:2))),
+    measurementLabel: f.measurementLabel || null,
+    bbox: normClientBBox(f.bbox)
+  };
+}
+
+function normClientBBox(b) {
+  if (!b || typeof b !== 'object') return null;
+  const vals = [b.x, b.y, b.width, b.height].map(Number);
+  if (!vals.every(Number.isFinite)) return null;
+  const max = Math.max(...vals);
+  const n = max <= 1 ? vals.map(v => v * 100) : vals;
+  if (n[2] < 2 || n[3] < 2 || n[0] >= 100 || n[1] >= 100) return null;
+  return { x: Math.min(n[0],98), y: Math.min(n[1],98), width: Math.min(n[2],100-n[0]), height: Math.min(n[3],100-n[1]) };
+}
+
+function buildFallbackReport(findings) {
+  const crits = findings.filter(f => f.type === 'critical');
+  const warns = findings.filter(f => f.type === 'warning');
+  const oks = findings.filter(f => f.type === 'compliant');
+  const score = Math.min(100, crits.reduce((s,f)=>s+f.priority*7,0) + warns.reduce((s,f)=>s+f.priority*3,0));
+  return {
+    title: 'Accessibility Assessment',
+    riskScore: score,
+    riskVerdict: score >= 75 ? 'HIGH LEGAL EXPOSURE' : score >= 45 ? 'MODERATE RISK' : 'LOWER RISK',
+    riskSummary: '',
+    costSummary: { display: 'N/A', notes: '', items: findings.filter(f=>f.fixCost).map(f=>({label:f.element,amount:f.fixCost})) },
+    priorityQueue: findings.filter(f=>f.type!=='compliant').sort((a,b)=>b.priority-a.priority).slice(0,5).map(f=>({findingId:f.id,label:f.element,reason:f.title})),
+    nextSteps: [],
+    certification: { status: crits.length ? 'VIOLATIONS FLAGGED' : warns.length ? 'NON-COMPLIANT' : 'COMPLIANT', note: '' }
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+//  HANDLE RESULT
+// ═══════════════════════════════════════════════════════
+function handleResult(analysis) {
+  clearInterval(scanInterval);
+  latestAnalysis = analysis;
+  chatHistory = [];
+
+  // Show scene type in badge
+  if (analysis.summary?.sceneType) {
+    const sb = document.getElementById('sceneBadge');
+    sb.textContent = '// ' + analysis.summary.sceneType.replace(/_/g,' ').toUpperCase();
+    sb.classList.add('show');
+    addFeedItem('scene', 'SCENE: ' + analysis.summary.sceneType.replace(/_/g,' ').toUpperCase(), '', '');
+  }
+
+  renderOverlays(analysis.findings);
+  let crits = 0, warns = 0, oks = 0;
+  analysis.findings.forEach((item, i) => {
+    setTimeout(() => {
+      const t = item.type === 'critical' ? 'crit' : item.type === 'warning' ? 'warn' : 'ok';
+      addFeedItem(t, item.title, item.description.slice(0, 120), item.standard);
+      if (item.type === 'critical') { crits++; document.getElementById('tc').textContent = crits; }
+      if (item.type === 'warning')  { warns++; document.getElementById('tw').textContent = warns; }
+      if (item.type === 'compliant'){ oks++;   document.getElementById('tok').textContent = oks; }
+    }, i * 500);
+  });
+  setTimeout(() => {
+    setProgress(100, 'ANALYSIS COMPLETE - BUILDING REPORT');
+    setStripe(100);
+    setTimeout(() => buildReport(analysis), 600);
+  }, analysis.findings.length * 500 + 200);
+}
+
+// ═══════════════════════════════════════════════════════
+//  OVERLAYS
+// ═══════════════════════════════════════════════════════
+function renderOverlays(findings, container) {
+  const layer = container || overlayLayer;
+  layer.innerHTML = '';
+  findings.filter(f => f.bbox).slice(0, 14).forEach((item, i) => {
+    const el = document.createElement('div');
+    const tone = item.type === 'critical' ? '' : item.type === 'warning' ? ' amber' : ' ok-ann';
+    el.className = 'ann' + tone;
+    el.style.cssText = `left:${item.bbox.x}%;top:${item.bbox.y}%;width:${item.bbox.width}%;height:${item.bbox.height}%`;
+    const lbl = document.createElement('div');
+    lbl.className = 'ann-label';
+    lbl.textContent = (item.measurementLabel || item.element || 'FINDING').toUpperCase().slice(0, 30);
+    el.appendChild(lbl);
+    const pulse = document.createElement('div');
+    pulse.className = 'ann-pulse';
+    el.appendChild(pulse);
+    if (item.standard) {
+      const meta = document.createElement('div');
+      meta.className = 'ann-meta';
+      meta.textContent = item.standard;
+      el.appendChild(meta);
+    }
+    layer.appendChild(el);
+    setTimeout(() => el.classList.add('show'), Math.min(1800, i * 180));
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  FULLSCREEN
+// ═══════════════════════════════════════════════════════
+function openFullscreen() {
+  if (latestAnalysis) renderOverlays(latestAnalysis.findings, document.getElementById('fsOverlay'));
+  document.getElementById('fsModal').classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════════
+//  BUILD REPORT
+// ═══════════════════════════════════════════════════════
+function buildReport(analysis) {
+  analysisData = analysis.findings;
+  showState('report');
+  setNavStep(3);
+  document.getElementById('liveBadge').classList.add('show');
+
+  const crits = analysisData.filter(f => f.type === 'critical');
+  const warns = analysisData.filter(f => f.type === 'warning');
+  const oks   = analysisData.filter(f => f.type === 'compliant');
+
+  reportId = 'AM-' + Date.now().toString(36).toUpperCase();
+  document.getElementById('rtbId').textContent = reportId;
+  document.getElementById('rtbTitle').textContent = (analysis.report?.title || `${crits.length + warns.length} VIOLATIONS DETECTED`).toUpperCase();
+  document.getElementById('reportHeadline').textContent = analysis.summary?.headline || 'Accessibility Assessment';
+  document.getElementById('reportOverview').textContent = analysis.summary?.overview || '';
+  document.getElementById('reportImpactStat').textContent = buildImpactStat(analysisData);
+
+  renderActionList('reportActions', analysis.summary?.immediateActions || []);
+
+  // Cards
+  document.getElementById('critCards').innerHTML = '';
+  document.getElementById('warnCards').innerHTML = '';
+  document.getElementById('compliant-cards').innerHTML = '';
+  document.getElementById('critCount').textContent = crits.length;
+  document.getElementById('warnCount').textContent = warns.length;
+  document.getElementById('critHeader').style.display = crits.length ? '' : 'none';
+  document.getElementById('warnHeader').style.display = warns.length ? '' : 'none';
+  crits.forEach(f => document.getElementById('critCards').appendChild(buildCard(f, 'crit')));
+  warns.forEach(f => document.getElementById('warnCards').appendChild(buildCard(f, 'warn')));
+  document.getElementById('okCount').textContent = oks.length;
+  document.getElementById('compliantToggle').style.display = oks.length ? '' : 'none';
+  oks.forEach(f => document.getElementById('compliant-cards').appendChild(buildCard(f, 'ok')));
+
+  // Risk score
+  const score = analysis.report?.riskScore ?? Math.min(100, crits.length*20 + warns.length*9);
+  animateRiskScore(score, analysis.report?.riskVerdict, analysis.report?.riskSummary, crits.length, warns.length, oks.length);
+
+  // Costs
+  buildCostBars(analysis.report?.costSummary, analysisData);
+  document.getElementById('costNote').textContent = analysis.report?.costSummary?.notes || '';
+
+  // Priority queue
+  buildPriorityQueue(analysis.report?.priorityQueue, analysisData);
+
+  // Next steps
+  renderNextSteps(analysis.report?.nextSteps || []);
+
+  // Cert
+  const now = new Date();
+  const cert = analysis.report?.certification || {};
+  const certTone = (cert.status || '').toUpperCase().includes('FLAG') || (cert.status || '').toUpperCase().includes('VIOLATION') ? 'flagged'
+    : (cert.status || '').toUpperCase().includes('CLEAR') || (cert.status || '').toUpperCase().includes('COMPLIANT') ? 'clear' : 'pending';
+  document.getElementById('certId').textContent = reportId;
+  document.getElementById('certDate').textContent = now.toISOString().replace('T',' ').slice(0,19);
+  document.getElementById('certStatus').textContent = cert.status || (crits.length ? 'VIOLATIONS FLAGGED' : 'NON-COMPLIANT');
+  document.getElementById('certStatus').className = 'cert-status ' + certTone;
+  document.getElementById('certNote').textContent = cert.note || '';
+  document.getElementById('rfDisc').textContent = '// ' + (cert.note || 'AI-generated preliminary assessment. Not a substitute for a certified ADA inspector.');
+
+  // Prep chat context
+  buildChatContext(analysis);
+
+  try { localStorage.setItem('am_last', JSON.stringify({ id: reportId, ts: Date.now() })); } catch {}
+}
+
+function animateRiskScore(score, verdict, narrative, crits, warns, oks) {
+  setTimeout(() => {
+    const ring = document.getElementById('riskRing');
+    const offset = 358 - (score / 100) * 358;
+    ring.style.strokeDashoffset = offset;
+    const col = score >= 75 ? 'var(--red)' : score >= 45 ? 'var(--amber)' : 'var(--green2)';
+    ring.style.stroke = col;
+    document.getElementById('riskNum').style.color = col;
+    let n = 0;
+    const iv = setInterval(() => { n = Math.min(n + 2, score); document.getElementById('riskNum').textContent = n; if (n >= score) clearInterval(iv); }, 20);
+    const vc = score >= 75 ? 'high' : score >= 45 ? 'moderate' : 'low';
+    document.getElementById('riskVerdict').textContent = verdict || (score >= 75 ? 'HIGH LEGAL EXPOSURE' : score >= 45 ? 'MODERATE RISK' : 'LOWER RISK');
+    document.getElementById('riskVerdict').className = 'risk-verdict ' + vc;
+    document.getElementById('riskSub').textContent = `${crits} critical, ${warns} warning${warns !== 1 ? 's' : ''}, ${oks} compliant`;
+    document.getElementById('riskNarrative').textContent = narrative || '';
+  }, 300);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CARD BUILDER
+// ═══════════════════════════════════════════════════════
+function getPriorityLabel(priority, type) {
+  if (type === 'ok') return 'CLEAR';
+  const p = Number(priority) || 0;
+  if (type === 'crit' || p >= 9) return 'CRITICAL';
+  if (p >= 7) return 'HIGH';
+  if (p >= 5) return 'MEDIUM';
+  return 'LOW';
+}
+
+function buildCard(item, type) {
+  const card = document.createElement('div');
+  card.className = `v-card ${type}`;
+  card.dataset.type = type;
+  card.dataset.priority = item.priority || 5;
+  card.dataset.cost = parseCostMin(item.fixCost);
+  card.dataset.standard = item.standard || '';
+  card.dataset.id = item.id;
+  const badge = type === 'crit' ? 'CRITICAL' : type === 'warn' ? 'WARNING' : 'COMPLIANT';
+  const detectedClass = type === 'ok' ? 'green' : 'red';
+  const prioLabel = getPriorityLabel(item.priority, type);
+  const contractorHtml = item.contractor && type !== 'ok' ? `
+    <div class="v-contractor">
+      <div class="v-contractor-icon"></div>
+      <div><span class="vc-label">CONTRACTOR</span><span class="vc-val">${item.contractor}</span></div>
+      ${item.timeline ? `<div style="margin-left:auto;text-align:right;"><span class="vc-label">TIMELINE</span><span class="vc-val" style="color:var(--amber)">${item.timeline}</span></div>` : ''}
+    </div>` : '';
+  card.innerHTML = `
+    <div class="v-left"></div>
+    <div class="v-inner">
+      <div class="v-top">
+        <span class="v-badge ${type}">${badge}</span>
+        <span class="v-element">${item.element || ''}</span>
+        <span class="v-standard">${item.standard || ''}</span>
+      </div>
+      <div class="v-grid">
+        <div class="v-cell"><span class="v-key">REQUIRED</span><span class="v-val green">${item.required || '—'}</span></div>
+        <div class="v-cell"><span class="v-key">DETECTED</span><span class="v-val ${detectedClass}">${item.detected || '—'}</span></div>
+        <div class="v-cell"><span class="v-key">EST. COST</span><span class="v-val amber">${item.fixCost || 'N/A'}</span></div>
+        <div class="v-cell"><span class="v-key">PRIORITY</span><span class="v-val ${type==='ok'?'green':type==='crit'?'red':'amber'}">${prioLabel}</span></div>
+      </div>
+      ${item.description ? `<div class="v-desc">${item.description}</div>` : ''}
+      ${contractorHtml}
+      <div class="v-actions">
+        ${type !== 'ok' ? `<button class="v-action-btn" onclick="openFixGuide('${item.id}')">HOW TO FIX</button>` : ''}
+        <button class="v-action-btn copy-btn" onclick="copyFinding('${item.id}')">COPY</button>
+        ${item.standard ? `<button class="v-action-btn" onclick="askAboutFinding('${item.id}')">ASK AI</button>` : ''}
+      </div>
+    </div>`;
+  return card;
+}
+
+// ═══════════════════════════════════════════════════════
+//  FIX GUIDE — calls Gemini directly from browser
+// ═══════════════════════════════════════════════════════
+async function openFixGuide(findingId) {
+  const finding = analysisData.find(f => f.id === findingId);
+  if (!finding) return;
+  document.getElementById('fixModalTitle').textContent = 'HOW TO FIX: ' + finding.element.toUpperCase();
+  document.getElementById('fixModalBody').innerHTML = `<div class="fix-loading"><div class="fix-loading-dot"></div><div class="fix-loading-dot"></div><div class="fix-loading-dot"></div><span>Generating remediation guide...</span></div>`;
+  document.getElementById('copyFixBtn').style.display = 'none';
+  document.getElementById('fixModal').classList.add('show');
+  fixGuideText = '';
+  try {
+    const endpoint = window.location.protocol === 'file:' ? `${LOCAL}/api/fix-guide` : '/api/fix-guide';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ finding })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    const text = data.guide || 'No guide generated.';
+    fixGuideText = text;
+    const formatted = text
+      .replace(/^([A-Z &]+)$/gm, match => `<strong>${match}</strong>`)
+      .replace(/\n/g, '<br>');
+    document.getElementById('fixModalBody').innerHTML = `<div class="fix-content">${formatted}</div>`;
+    document.getElementById('copyFixBtn').style.display = 'block';
+  } catch (err) {
+    document.getElementById('fixModalBody').innerHTML = `<div class="fix-content" style="color:var(--red);">Failed to generate guide: ${err.message}</div>`;
+  }
+}
+function copyFixGuide() {
+  if (!fixGuideText) return;
+  navigator.clipboard.writeText(fixGuideText).then(() => showToast('// FIX GUIDE COPIED', 'ok'));
+}
+
+// ═══════════════════════════════════════════════════════
+//  COPY FINDING
+// ═══════════════════════════════════════════════════════
+function copyFinding(findingId) {
+  const f = analysisData.find(f => f.id === findingId);
+  if (!f) return;
+  const text = `FINDING: ${f.element}
+TYPE: ${f.type.toUpperCase()}
+ADA STANDARD: ${f.standard || 'N/A'}
+TITLE: ${f.title}
+REQUIRED: ${f.required}
+DETECTED: ${f.detected}
+EST. COST: ${f.fixCost || 'N/A'}
+CONTRACTOR: ${f.contractor || 'N/A'}
+TIMELINE: ${f.timeline || 'N/A'}`;
+  navigator.clipboard.writeText(text).then(() => showToast('// FINDING COPIED', 'ok'));
+}
+
+// ═══════════════════════════════════════════════════════
+//  ASK ABOUT FINDING (opens chat with context)
+// ═══════════════════════════════════════════════════════
+function askAboutFinding(findingId) {
+  const f = analysisData.find(f => f.id === findingId);
+  if (!f) return;
+  openChat();
+  const q = `Tell me more about the "${f.element}" finding (${f.standard}): ${f.detected}. What are the specific ADA requirements and what happens if this isn't fixed?`;
+  document.getElementById('chatInput').value = q;
+  sendChatMessage();
+}
+
+// ═══════════════════════════════════════════════════════
+//  AI CHAT
+// ═══════════════════════════════════════════════════════
+let chatContext = '';
+
+function buildChatContext(analysis) {
+  const findings = analysis.findings.map(f =>
+    `[${f.type.toUpperCase()}] ${f.element} (${f.standard || 'N/A'}): ${f.detected}. Fix cost: ${f.fixCost || 'unknown'}.`
+  ).join('\n');
+  chatContext = `You are an expert ADA accessibility consultant analyzing a report for a specific space.
+
+REPORT ID: ${reportId}
+RISK SCORE: ${analysis.report?.riskScore || 'N/A'}/100 (${analysis.report?.riskVerdict || ''})
+SCENE SUMMARY: ${analysis.summary?.headline || ''}
+OVERVIEW: ${analysis.summary?.overview || ''}
+
+FINDINGS:
+${findings}
+
+Answer questions about this report concisely and practically. Reference specific ADA sections when relevant. Be direct and actionable. If asked to write something (letter, brief, etc.), produce it fully formatted.`;
+}
+
+function openChat() {
+  document.getElementById('chatPanel').classList.add('open');
+  document.getElementById('state-report').classList.add('chat-open');
+}
+function toggleChat() {
+  const panel = document.getElementById('chatPanel');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    document.getElementById('state-report').classList.remove('chat-open');
+  } else {
+    openChat();
+  }
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function sendChip(text) {
+  document.getElementById('chatInput').value = text;
+  sendChatMessage();
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addChatMsg('user', text);
+  const thinkingId = addChatMsg('ai', null);
+  chatHistory.push({ role: 'user', content: text });
+  try {
+    const endpoint = window.location.protocol === 'file:' ? `${LOCAL}/api/chat` : '/api/chat';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatContext, history: chatHistory })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    const reply = data.reply || 'No response.';
+    chatHistory.push({ role: 'ai', content: reply });
+    updateChatMsg(thinkingId, reply);
+  } catch (err) {
+    const msg = String(err.message || 'Chat failed');
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      updateChatMsg(thinkingId, 'Error: Server not reachable. Run "npm start" and open http://127.0.0.1:3000/annalyzer.html');
+      return;
+    }
+    updateChatMsg(thinkingId, `Error: ${msg}`);
+  }
+}
+
+let chatMsgCount = 0;
+function addChatMsg(role, text) {
+  const id = 'cmsg-' + (++chatMsgCount);
+  const body = document.getElementById('chatBody');
+  const wrapper = document.createElement('div');
+  wrapper.className = `chat-msg ${role}`;
+  wrapper.id = id;
+  if (text === null) {
+    wrapper.innerHTML = `<div class="chat-bubble ai loading"><div class="chat-thinking"><span></span><span></span><span></span></div></div>`;
+  } else {
+    const escaped = text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    wrapper.innerHTML = `<div class="chat-bubble ${role}">${escaped}</div>`;
+  }
+  body.appendChild(wrapper);
+  body.scrollTop = body.scrollHeight;
+  return id;
+}
+function updateChatMsg(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const escaped = text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  el.innerHTML = `<div class="chat-bubble ai">${escaped}</div>`;
+  document.getElementById('chatBody').scrollTop = 99999;
+}
+
+// ═══════════════════════════════════════════════════════
+//  COST BARS
+// ═══════════════════════════════════════════════════════
+function buildCostBars(costSummary, findings) {
+  const container = document.getElementById('costBars');
+  container.innerHTML = '';
+  const items = costSummary?.items?.length ? costSummary.items : findings.filter(f => f.fixCost && f.type !== 'compliant').slice(0, 8).map(f => ({ label: f.element, amount: f.fixCost }));
+  const maxCost = Math.max(...items.map(item => parseCostMin(item.amount)), 1);
+  items.forEach(item => {
+    const lo = parseCostMin(item.amount);
+    const pct = Math.max(8, Math.round((lo / maxCost) * 100));
+    const isHigh = lo > maxCost * 0.6;
+    const div = document.createElement('div');
+    div.className = 'cost-bar-row';
+    div.innerHTML = `<div class="cost-bar-label"><span class="cost-bar-key">${item.label}</span><span class="cost-bar-val">${item.amount}</span></div>
+      <div class="cost-bar-track"><div class="cost-bar-fill ${isHigh ? 'red' : ''}" style="width:0%" data-target="${pct}"></div></div>`;
+    container.appendChild(div);
+  });
+  document.getElementById('costTotal').textContent = costSummary?.display || 'N/A';
+  setTimeout(() => container.querySelectorAll('.cost-bar-fill').forEach(bar => { bar.style.width = bar.dataset.target + '%'; }), 400);
+}
+
+// ═══════════════════════════════════════════════════════
+//  PRIORITY QUEUE
+// ═══════════════════════════════════════════════════════
+function buildPriorityQueue(queue, findings) {
+  const list = document.getElementById('priorityList');
+  list.innerHTML = '';
+  const items = Array.isArray(queue) && queue.length ? queue : findings.filter(f => f.type !== 'compliant').sort((a,b) => {
+    const ts = v => v.type === 'critical' ? 1000 : 0;
+    return (ts(b) + b.priority) - (ts(a) + a.priority);
+  }).slice(0, 5).map(f => ({ findingId: f.id, label: f.element, reason: f.title }));
+  items.slice(0, 5).forEach((item, i) => {
+    const f = findings.find(f => f.id === item.findingId);
+    const ftype = f?.type === 'critical' ? 'crit' : f?.type === 'warning' ? 'warn' : 'ok';
+    const plabel = f ? getPriorityLabel(f.priority, ftype) : '';
+    const el = document.createElement('div');
+    el.className = 'priority-item';
+    el.innerHTML = `<div class="priority-rank">0${i+1}</div>
+      <div class="priority-content">
+        <span class="priority-name">${item.label} ${plabel ? `- <span style="color:${ftype==='crit'?'var(--red)':'var(--amber)'}">${plabel}</span>` : ''}</span>
+        <span class="priority-why">${item.reason || ''}</span>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  NEXT STEPS
+// ═══════════════════════════════════════════════════════
+function renderNextSteps(items) {
+  const el = document.getElementById('nextStepsList');
+  el.innerHTML = '';
+  (items.length ? items : ['No next steps returned.']).forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'next-step';
+    row.innerHTML = `<div class="next-step-marker"></div><div class="next-step-text">${item}</div>`;
+    el.appendChild(row);
+  });
+}
+
+function renderActionList(containerId, items) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  (items.length ? items : ['Analysis complete - review findings below.']).forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'action-item';
+    row.innerHTML = `<div class="action-index">0${i+1}</div><div class="action-text">${item}</div>`;
+    el.appendChild(row);
+  });
+}
+
+function buildImpactStat(findings) {
+  const hasBlocking = findings.some(f => {
+    const t = `${f.element} ${f.title} ${f.description} ${f.detected}`.toLowerCase();
+    return /(vehicle|car|truck)/.test(t) && /(block|obstruct)/.test(t);
+  });
+  return hasBlocking
+    ? 'Blocking an accessible space or aisle can deny immediate wheelchair access and expose the property owner to DOJ civil complaints.'
+    : 'ADA Title III violations can trigger DOJ civil penalties up to $90,535 for a first violation and $181,071 for subsequent violations.';
+}
+
+// ═══════════════════════════════════════════════════════
+//  FILTER + SORT
+// ═══════════════════════════════════════════════════════
+function setFilter(f) {
+  activeFilter = f;
+  ['fAll','fCrit','fWarn'].forEach(id => document.getElementById(id).className = 'filter-btn');
+  document.getElementById(f === 'all' ? 'fAll' : f === 'crit' ? 'fCrit' : 'fWarn').className = 'filter-btn active-' + (f === 'all' ? 'crit' : f);
+  document.querySelectorAll('.v-card').forEach(card => {
+    const t = card.dataset.type;
+    card.style.display = (f === 'all' || (f === 'crit' && t === 'crit') || (f === 'warn' && (t === 'warn' || t === 'ok'))) ? '' : 'none';
+  });
+  document.getElementById('critHeader').style.display = document.querySelectorAll('.v-card.crit:not([style*="none"])').length ? '' : 'none';
+  document.getElementById('warnHeader').style.display = document.querySelectorAll('.v-card.warn:not([style*="none"])').length ? '' : 'none';
+}
+
+function applySort() {
+  const s = document.getElementById('sortSelect').value;
+  ['critCards','warnCards','compliant-cards'].forEach(cid => {
+    const el = document.getElementById(cid);
+    [...el.querySelectorAll('.v-card')].sort((a, b) => {
+      if (s === 'cost') return (Number(b.dataset.cost)||0) - (Number(a.dataset.cost)||0);
+      if (s === 'priority') return (Number(b.dataset.priority)||0) - (Number(a.dataset.priority)||0);
+      if (s === 'standard') return (a.dataset.standard||'').localeCompare(b.dataset.standard||'');
+      return 0;
+    }).forEach(c => el.appendChild(c));
+  });
+}
+
+function toggleCompliant() {
+  const c = document.getElementById('compliant-cards');
+  const a = document.getElementById('ctArrow');
+  c.classList.toggle('open');
+  a.style.transform = c.classList.contains('open') ? 'rotate(90deg)' : '';
+}
+
+// ═══════════════════════════════════════════════════════
+//  SHARE / EXPORT
+// ═══════════════════════════════════════════════════════
+function copyShareLink() {
+  if (!analysisData.length) { showToast('// NO REPORT YET'); return; }
+  const summary = { id: reportId, crits: analysisData.filter(f=>f.type==='critical').length, warns: analysisData.filter(f=>f.type==='warning').length, ts: Date.now() };
+  const url = window.location.href.split('?')[0] + '?report=' + btoa(JSON.stringify(summary));
+  navigator.clipboard.writeText(url).then(() => showToast('// SHARE LINK COPIED', 'ok')).catch(() => showToast('// COPY FAILED', 'error'));
+}
+function exportPDF() { showToast('// OPENING PRINT DIALOG...'); setTimeout(() => window.print(), 300); }
+
+// ═══════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════
+function parseCostMin(costStr) {
+  if (!costStr) return 0;
+  const m = costStr.match(/[\d,]+/);
+  return m ? parseInt(m[0].replace(/,/g,''), 10) : 0;
+}
+
+function showState(s) {
+  document.getElementById('state-upload').classList.toggle('hidden', s !== 'upload');
+  document.getElementById('state-scan').classList.toggle('hidden', s !== 'scan');
+  document.getElementById('state-report').classList.toggle('hidden', s !== 'report');
+}
+
+function setNavStep(n) {
+  ['navS1','navS2','navS3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if (i+1 === n) el.classList.add('active');
+    else if (i+1 < n) el.classList.add('done');
+  });
+}
+
+function setStripe(pct) { document.getElementById('stripeFill').style.width = Math.min(100, pct) + '%'; }
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type === 'error' ? ' error-toast' : type === 'ok' ? ' ok-toast' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function resetToUpload() {
+  selectedFile = null; imageBase64 = null; imageDataUrl = null;
+  analysisData = []; latestAnalysis = null; isDemoMode = false;
+  reportId = ''; activeFilter = 'all'; chatHistory = []; fixGuideText = '';
+  clearInterval(scanInterval);
+  document.getElementById('fileInput').value = '';
+  document.getElementById('uzPreview').classList.remove('show');
+  document.getElementById('uzContent').style.display = '';
+  uploadZone.classList.remove('has-file');
+  document.getElementById('analyzeBtn').classList.remove('active');
+  document.getElementById('feedBody').innerHTML = '';
+  ['tc','tw','tok'].forEach(id => document.getElementById(id).textContent = '0');
+  setProgress(0, 'INITIALIZING...');
+  document.getElementById('progFill').style.width = '0%';
+  ['critCards','warnCards','compliant-cards'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
+  document.getElementById('compliant-cards').classList.remove('open');
+  document.getElementById('critHeader').style.display = '';
+  document.getElementById('warnHeader').style.display = '';
+  document.getElementById('riskRing').style.strokeDashoffset = '358';
+  document.getElementById('riskNum').textContent = '0';
+  document.getElementById('riskVerdict').textContent = 'CALCULATING';
+  document.getElementById('riskSub').textContent = '—';
+  document.getElementById('riskNarrative').textContent = '';
+  document.getElementById('costBars').innerHTML = '';
+  document.getElementById('costTotal').textContent = '—';
+  document.getElementById('priorityList').innerHTML = '';
+  document.getElementById('nextStepsList').innerHTML = '';
+  document.getElementById('certStatus').className = 'cert-status';
+  document.getElementById('certStatus').textContent = '—';
+  overlayLayer.innerHTML = '';
+  document.getElementById('sceneBadge').classList.remove('show');
+  document.getElementById('chatPanel').classList.remove('open');
+  document.getElementById('chatBody').innerHTML = '';
+  document.getElementById('demoBadge').classList.remove('show');
+  document.getElementById('liveBadge').classList.remove('show');
+  document.getElementById('errorOverlay').classList.remove('show');
+  document.getElementById('state-report').classList.remove('chat-open');
+  setNavStep(1);
+  setStripe(0);
+  showState('upload');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    ['fixModal','fsModal','cameraModal'].forEach(id => document.getElementById(id).classList.remove('show'));
+    document.getElementById('errorOverlay').classList.remove('show');
+    if (document.getElementById('chatPanel').classList.contains('open')) toggleChat();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'p' && !document.getElementById('state-report').classList.contains('hidden')) { e.preventDefault(); exportPDF(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); if (!document.getElementById('state-report').classList.contains('hidden')) toggleChat(); }
+});
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+(function init() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('report')) {
+    try {
+      const d = JSON.parse(atob(params.get('report')));
+      showToast(`// SHARED REPORT ${d.id} - ${d.crits} CRITICAL, ${d.warns} WARNINGS`);
+    } catch {}
+  }
+})();
+</script>
+</body>
+</html>
