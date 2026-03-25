@@ -6,7 +6,8 @@ const path = require('path');
 
 const HOST          = '127.0.0.1';
 const PORT          = Number(process.env.PORT) || 3000;
-const ROOT          = __dirname;
+const ROOT          = path.resolve(__dirname, '..');
+const PUBLIC_DIR    = path.join(ROOT, 'public');
 const GEMINI_MODEL  = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_RETRIES   = 2;
 
@@ -1197,9 +1198,9 @@ const ROUTES = {
 
 function serveStatic(reqPath, res, headOnly) {
   const target   = ROUTES[reqPath] || reqPath.replace(/^\/+/, '');
-  const filePath = path.resolve(ROOT, target);
+  const filePath = path.resolve(PUBLIC_DIR, target);
 
-  if (!filePath.startsWith(ROOT)) {
+  if (!filePath.startsWith(PUBLIC_DIR)) {
     return sendJson(res, 403, { error: 'Forbidden' });
   }
 
