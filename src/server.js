@@ -156,7 +156,7 @@ const LOCALIZATION_SCHEMA = {
 // ─────────────────────────────────────────────────────────────
 //  SERVER
 // ─────────────────────────────────────────────────────────────
-http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
   try {
     if (req.method === 'OPTIONS') return sendEmpty(res, 204);
 
@@ -174,9 +174,13 @@ http.createServer(async (req, res) => {
     console.error('[server] unhandled error:', err);
     return sendJson(res, 500, { error: 'Internal server error' });
   }
-}).listen(PORT, HOST, () => {
+}
+
+function startServer() {
+  return http.createServer(handleRequest).listen(PORT, HOST, () => {
   console.log(`\n  AccessMap ▸  http://${HOST}:${PORT}/\n`);
-});
+  });
+}
 
 // ─────────────────────────────────────────────────────────────
 //  HANDLERS
@@ -1317,4 +1321,19 @@ function loadEnvFile(envPath) {
     const value = line.slice(idx + 1).trim().replace(/^['"]|['"]$/g, '');
     if (key && !process.env[key]) process.env[key] = value;
   });
+}
+
+module.exports = {
+  handleRequest,
+  handleStatus,
+  handleAnalyze,
+  handleChat,
+  handleFixGuide,
+  sendJson,
+  sendEmpty,
+  startServer
+};
+
+if (require.main === module) {
+  startServer();
 }

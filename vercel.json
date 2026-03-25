@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/analyze",
+      "destination": "/annalyzer.html"
+    }
+  ]
+}
