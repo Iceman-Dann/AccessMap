@@ -7,7 +7,6 @@
 [![License](https://img.shields.io/badge/license-MIT-D4960A?style=for-the-badge&logoColor=black)](LICENSE)
 [![Node](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
-[![HackHazards](https://img.shields.io/badge/HackHazards%20'26-Submission-C1281B?style=for-the-badge)](https://hackhazards-26.devpost.com)
 [![INNOSpark](https://img.shields.io/badge/INNOSpark%20'26-Submission-D4960A?style=for-the-badge)](https://devpost.com)
 
 <br/>
