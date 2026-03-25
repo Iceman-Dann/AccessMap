@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Dark background -->
+  <rect width="32" height="32" fill="#060608"/>
+  
+  <!-- Grid lines (subtle) -->
+  <line x1="16" y1="0" x2="16" y2="32" stroke="#1a1a22" stroke-width="0.5"/>
+  <line x1="0" y1="16" x2="32" y2="16" stroke="#1a1a22" stroke-width="0.5"/>
+  
+  <!-- Crosshair — the AccessMap cursor icon -->
+  <!-- Vertical bar -->
+  <line x1="16" y1="4" x2="16" y2="28" stroke="#D4960A" stroke-width="1.5" stroke-linecap="square"/>
+  <!-- Horizontal bar -->
+  <line x1="4" y1="16" x2="28" y2="16" stroke="#D4960A" stroke-width="1.5" stroke-linecap="square"/>
+  
+  <!-- Center dot -->
+  <rect x="14" y="14" width="4" height="4" fill="#D4960A"/>
+  
+  <!-- Corner brackets -->
+  <!-- Top-left -->
+  <polyline points="4,9 4,4 9,4" fill="none" stroke="#D4960A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/>
+  <!-- Top-right -->
+  <polyline points="23,4 28,4 28,9" fill="none" stroke="#D4960A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/>
+  <!-- Bottom-left -->
+  <polyline points="4,23 4,28 9,28" fill="none" stroke="#D4960A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/>
+  <!-- Bottom-right -->
+  <polyline points="28,23 28,28 23,28" fill="none" stroke="#D4960A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/>
+</svg>
