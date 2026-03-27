@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AccessMap — ADA Compliance Intelligence</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Barlow:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+:root {
+--bg: #060606;
+--surface: #0d0d0d;
+--surface2: #141414;
+--border: #1a1a1a;
+--border2: #252525;
+--text: #F2EEE6;
+--muted: #565250;
+--muted2: #363230;
+--amber: #D4960A;
+--amber2: #F0A80A;
+--amber3: rgba(212,150,10,0.08);
+--amber4: rgba(212,150,10,0.15);
+--red: #C1281B;
+--red2: #E03020;
+--green: #1E7A3E;
+--green2: #2A9E52;
+--glow: 0 0 40px rgba(212,150,10,0.3);
+--glow2: 0 0 80px rgba(212,150,10,0.15);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow-x:hidden;cursor:none;}
+
+/* ── ENHANCED CURSOR ── */
+#cursor-outer{position:fixed;width:40px;height:40px;border:1px solid rgba(212,150,10,0.6);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:width 0.3s,height 0.3s,border-color 0.3s;mix-blend-mode:difference;}
+#cursor-inner{position:fixed;width:6px;height:6px;background:var(--amber);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--amber);}
+#cursor-trail{position:fixed;width:100px;height:100px;background:radial-gradient(circle,rgba(212,150,10,0.06) 0%,transparent 70%);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);}
+body.cursor-hover #cursor-outer{width:60px;height:60px;border-color:var(--amber2);background:rgba(212,150,10,0.05);}
+
+/* ── TOP STRIPE ── */
+.top-stripe{position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--red),var(--amber),var(--amber2),var(--red));background-size:400% 100%;animation:stripeFlow 3s linear infinite;z-index:1000;}
+@keyframes stripeFlow{0%{background-position:0%}100%{background-position:400%}}
+
+/* ── NAV ── */
+nav{position:fixed;top:2px;left:0;right:0;z-index:999;padding:14px 56px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(6,6,6,0.85);backdrop-filter:blur(24px);transition:padding 0.4s;}
+nav.scrolled{padding:10px 56px;}
+.nav-logo{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--amber);letter-spacing:.2em;text-transform:uppercase;}
+.nav-logo span{color:var(--text);}
+.nav-logo .logo-bracket{display:inline-block;animation:bracketPulse 3s ease infinite;}
+@keyframes bracketPulse{0%,100%{color:var(--amber);text-shadow:none;}50%{color:var(--amber2);text-shadow:0 0 20px var(--amber);}}
+.nav-pills{display:flex;gap:24px;align-items:center;}
+.nav-pill{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;padding:4px 12px;border:1px solid var(--border2);transition:color .2s,border-color .2s,background .2s;text-decoration:none;cursor:none;position:relative;overflow:hidden;}
+.nav-pill::before{content:'';position:absolute;bottom:0;left:0;right:100%;height:1px;background:var(--amber);transition:right 0.3s ease;}
+.nav-pill:hover{color:var(--amber);border-color:var(--amber);}
+.nav-pill:hover::before{right:0;}
+.nav-pill.active{color:var(--amber);border-color:var(--amber);background:var(--amber3);}
+.nav-status{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.15em;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green2);box-shadow:0 0 12px var(--green2);animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
+
+/* ── NOISE OVERLAY ── */
+body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:160px;}
+
+/* ── CANVASES ── */
+#hero-canvas{position:absolute;inset:0;z-index:1;pointer-events:none;}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.4;}
+
+section{position:relative;z-index:2;}
+.inner{max-width:1400px;margin:0 auto;padding:0 56px;}
+.sec-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.35em;text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:14px;opacity:0;transform:translateY(20px);}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.sec-headline{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(44px,6.5vw,100px);line-height:.88;letter-spacing:-.02em;color:var(--text);margin-bottom:64px;}
+.sec-headline .amber{color:var(--amber);}
+
+/* ═══════════════════════════ HERO ═══════════════════════════ */
+.hero{min-height:100vh;padding:0;display:grid;grid-template-rows:1fr auto;overflow:hidden;border-bottom:1px solid var(--border);position:relative;}
+.hero-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:72px 72px;opacity:.35;animation:gridPulse 8s ease infinite;}
+@keyframes gridPulse{0%,100%{opacity:.35;}50%{opacity:.5;}}
+.hero-grid::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(212,150,10,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(212,150,10,.12) 1px,transparent 1px);background-size:360px 360px;}
+
+/* Scanline effect */
+.hero-scanlines{position:absolute;inset:0;pointer-events:none;z-index:2;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);}
+
+.coord{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);letter-spacing:.1em;}
+.coord.tl{top:76px;left:56px;}
+.coord.tr{top:76px;right:56px;text-align:right;}
+.coord.bl{bottom:88px;left:56px;}
+.coord.br{bottom:88px;right:56px;}
+
+.v-label{position:absolute;left:16px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);letter-spacing:.3em;text-transform:uppercase;white-space:nowrap;}
+
+.live-counter{position:absolute;right:56px;top:88px;z-index:3;text-align:right;}
+.lc-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--red);letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+.lc-label::before{content:'';width:6px;height:6px;background:var(--red);border-radius:50%;box-shadow:0 0 12px var(--red);animation:pulse 1s ease infinite;}
+.lc-number{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:56px;color:var(--red);letter-spacing:-.03em;line-height:1;text-shadow:0 0 30px rgba(193,40,27,0.5);}
+.lc-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.1em;margin-top:4px;}
+
+.hero-content{display:flex;flex-direction:column;justify-content:center;padding:140px 56px 0;position:relative;z-index:3;}
+.hero-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--amber);letter-spacing:.3em;text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;gap:12px;opacity:0;}
+.hero-eyebrow::before{content:'';width:40px;height:1px;background:var(--amber);}
+
+.hero-headline{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(72px,11.5vw,188px);line-height:.84;letter-spacing:-.028em;text-transform:uppercase;}
+.hl1{display:block;color:var(--text);overflow:hidden;opacity:0;transform:translateY(100px);}
+.hl2{display:block;color:var(--amber);overflow:hidden;position:relative;opacity:0;transform:translateY(100px);}
+.hl2::before,.hl2::after{content:'ONE LAWSUIT AWAY.';position:absolute;inset:0;}
+.hl2::before{color:var(--red2);animation:glitch1 5s 2s infinite;}
+.hl2::after{color:cyan;animation:glitch2 5s 2s infinite;mix-blend-mode:screen;opacity:.2;}
+
+@keyframes glitch1{0%,90%,100%{transform:translate(0);opacity:0;}91%{transform:translate(-5px,2px);opacity:.7;}92%{transform:translate(4px,-1px);opacity:.5;}93%{transform:translate(-3px,3px);opacity:.6;}94%{transform:translate(0);opacity:0;}}
+@keyframes glitch2{0%,90%,100%{transform:translate(0);opacity:0;}91%{transform:translate(5px,-2px);opacity:1;}92%{transform:translate(-4px,1px);opacity:.8;}93%{transform:translate(3px,-1px);opacity:.5;}94%{transform:translate(0);opacity:0;}}
+
+.hero-sub{font-family:'IBM Plex Mono',monospace;font-size:clamp(11px,1.2vw,14px);color:var(--muted);letter-spacing:.05em;margin-top:28px;overflow:hidden;white-space:nowrap;opacity:0;}
+.hero-sub .typed{border-right:2px solid var(--amber);padding-right:2px;}
+
+/* Upload zone */
+.upload-zone{margin-top:44px;width:clamp(300px,46%,560px);border:2px dashed var(--amber);background:rgba(212,150,10,.025);padding:44px 40px 36px;position:relative;cursor:none;z-index:3;transition:background .3s,border-color .3s,transform .3s,box-shadow .3s;overflow:hidden;opacity:0;}
+.upload-zone::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(212,150,10,.04));pointer-events:none;}
+.upload-zone .scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);top:-2px;animation:scan 2.5s ease-in-out infinite;opacity:.7;}
+@keyframes scan{0%{top:-2px;opacity:0;}10%{opacity:.7;}90%{opacity:.7;}100%{top:100%;opacity:0;}}
+.upload-zone:hover{background:rgba(212,150,10,.08);border-color:var(--amber2);transform:translateY(-4px);box-shadow:0 20px 60px rgba(212,150,10,0.15);}
+.uc{position:absolute;width:14px;height:14px;border-color:var(--amber);border-style:solid;border-width:0;}
+.uc.tl{top:-1px;left:-1px;border-top-width:2px;border-left-width:2px;}
+.uc.tr{top:-1px;right:-1px;border-top-width:2px;border-right-width:2px;}
+.uc.bl{bottom:-1px;left:-1px;border-bottom-width:2px;border-left-width:2px;}
+.uc.br{bottom:-1px;right:-1px;border-bottom-width:2px;border-right-width:2px;}
+.uz-title{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;}
+.uz-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;letter-spacing:.1em;}
+.uz-formats{display:flex;gap:8px;margin-top:16px;}
+.uz-format{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);border:1px solid var(--border2);padding:3px 8px;letter-spacing:.1em;}
+
+/* 3D Floating Badge */
+.hero-badge-3d{position:absolute;right:80px;bottom:160px;z-index:3;width:160px;height:160px;perspective:600px;}
+.badge-inner{width:100%;height:100%;transform-style:preserve-3d;animation:badgeFloat 6s ease-in-out infinite;}
+@keyframes badgeFloat{0%,100%{transform:rotateX(10deg) rotateY(-15deg) translateY(0);}33%{transform:rotateX(-5deg) rotateY(20deg) translateY(-12px);}66%{transform:rotateX(15deg) rotateY(5deg) translateY(-6px);}}
+.badge-face{position:absolute;inset:0;border:2px solid var(--amber);display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(6,6,6,0.9);text-align:center;box-shadow:0 0 30px rgba(212,150,10,0.2),inset 0 0 30px rgba(212,150,10,0.05);}
+.badge-face::before{content:'';position:absolute;inset:6px;border:1px solid rgba(212,150,10,.3);}
+.badge-icon{font-size:32px;margin-bottom:8px;}
+.badge-text{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;color:var(--amber);letter-spacing:.2em;text-transform:uppercase;line-height:1.8;}
+
+/* Stat strip */
+.stat-strip{display:flex;border-top:1px solid var(--border2);margin-top:60px;position:relative;z-index:3;opacity:0;}
+.stat-item{flex:1;padding:22px 36px;border-right:1px solid var(--border2);position:relative;overflow:hidden;transition:background 0.3s;}
+.stat-item:last-child{border-right:none;}
+.stat-item::before{content:'';position:absolute;bottom:0;left:0;right:100%;height:2px;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:right .6s ease;}
+.stat-item:hover{background:rgba(212,150,10,0.03);}
+.stat-item:hover::before{right:0;}
+.stat-num{font-family:'IBM Plex Mono',monospace;font-size:clamp(14px,1.8vw,22px);font-weight:700;color:var(--amber);display:block;letter-spacing:.04em;}
+.stat-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:4px;display:block;}
+
+/* ═══════════════════════════ MARQUEE ═══════════════════════════ */
+.marquee-section{padding:0;overflow:hidden;border-top:1px solid var(--border2);border-bottom:1px solid var(--border2);background:var(--surface);}
+.marquee-track{display:flex;gap:0;animation:marqueeScroll 30s linear infinite;white-space:nowrap;}
+.marquee-track:hover{animation-play-state:paused;}
+@keyframes marqueeScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.marquee-item{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:80px;text-transform:uppercase;letter-spacing:-.03em;color:transparent;-webkit-text-stroke:1px var(--border2);padding:20px 40px;transition:-webkit-text-stroke-color 0.3s,color 0.3s;flex-shrink:0;}
+.marquee-item.highlight{color:var(--amber);-webkit-text-stroke:1px var(--amber);}
+.marquee-item:hover{color:var(--amber);-webkit-text-stroke:1px var(--amber);}
+
+/* ═══════════════════════════ STORY SECTION ═══════════════════════════ */
+.story-section{padding:120px 0;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.story-bg-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30vw;color:transparent;-webkit-text-stroke:1px rgba(212,150,10,0.04);white-space:nowrap;pointer-events:none;user-select:none;letter-spacing:-.05em;}
+.story-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;position:relative;z-index:2;}
+.story-body{font-size:clamp(15px,1.5vw,18px);color:rgba(242,238,230,0.7);line-height:1.8;margin-bottom:32px;}
+.story-body strong{color:var(--text);}
+.story-pull{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(32px,4vw,56px);text-transform:uppercase;line-height:.9;letter-spacing:-.02em;color:var(--amber);border-left:3px solid var(--amber);padding-left:24px;margin:40px 0;}
+
+/* ═══════════════════════════ BEFORE/AFTER ═══════════════════════════ */
+.diff-section{padding:120px 0;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.diff-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 50%,rgba(193,40,27,0.03),transparent);}
+.split-container{display:grid;grid-template-columns:1fr auto 1fr;gap:0;border:1px solid var(--border2);opacity:0;}
+.split-col{padding:0;}
+.split-header{padding:20px 32px;border-bottom:1px solid var(--border2);}
+.split-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:4px 12px;border:1px solid;}
+.split-tag.red{color:var(--red2);border-color:var(--red2);}
+.split-tag.green{color:var(--green2);border-color:var(--green2);}
+.split-item{display:flex;gap:20px;padding:24px 32px;border-bottom:1px solid var(--border);align-items:flex-start;transition:background 0.2s;}
+.split-item:hover{background:rgba(255,255,255,0.02);}
+.split-item:last-of-type{border-bottom:none;}
+.split-icon{font-size:16px;flex-shrink:0;margin-top:2px;width:24px;text-align:center;}
+.split-icon.ok{color:var(--green2);}
+.split-item div{flex:1;}
+.split-item strong{display:block;font-size:14px;color:var(--text);margin-bottom:4px;}
+.split-item span{font-size:13px;color:var(--muted);line-height:1.5;}
+.split-foot{padding:20px 32px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.15em;border-top:1px solid var(--border2);}
+.split-foot.red{color:var(--red2);background:rgba(193,40,27,0.05);}
+.split-foot.green{color:var(--green2);background:rgba(30,122,62,0.05);}
+.split-divider{width:1px;background:var(--border2);display:flex;align-items:center;justify-content:center;position:relative;}
+.split-vs{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:24px;color:var(--muted2);letter-spacing:.1em;writing-mode:vertical-rl;background:var(--bg);padding:16px 8px;position:relative;z-index:1;}
+
+/* ═══════════════════════════ HOW IT WORKS ═══════════════════════════ */
+.how-section{padding:120px 0;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border2);}
+.step-card{background:var(--bg);padding:48px 40px;position:relative;overflow:hidden;opacity:0;transform:translateY(40px);transition:background 0.3s;}
+.step-card::before{content:'';position:absolute;top:0;left:0;right:100%;height:3px;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:right 0.6s ease;}
+.step-card:hover{background:rgba(212,150,10,0.02);}
+.step-card:hover::before{right:0;}
+.step-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:80px;color:rgba(212,150,10,0.08);line-height:1;display:block;margin-bottom:16px;letter-spacing:-.04em;transition:color 0.3s;}
+.step-card:hover .step-num{color:rgba(212,150,10,0.15);}
+.step-title{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--amber);letter-spacing:.15em;text-transform:uppercase;margin-bottom:16px;}
+.step-body{font-size:14px;color:var(--muted);line-height:1.7;}
+.step-body strong{color:var(--text);}
+
+/* ═══════════════════════════ SOCIAL IMPACT ═══════════════════════════ */
+.a11y-section{padding:120px 0;border-bottom:1px solid var(--border);background:var(--surface);position:relative;overflow:hidden;}
+.a11y-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 100%,rgba(30,122,62,0.06),transparent);}
+.a11y-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border2);}
+.a11y-card{background:var(--surface);padding:48px 40px;position:relative;overflow:hidden;opacity:0;transform:translateY(40px);}
+.a11y-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);transform:scaleX(0);transition:transform 0.6s ease;}
+.a11y-card:hover::after{transform:scaleX(1);}
+.a11y-big{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(48px,6vw,80px);color:var(--amber);letter-spacing:-.03em;line-height:1;display:block;margin-bottom:16px;text-shadow:0 0 40px rgba(212,150,10,0.3);}
+.a11y-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--text);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:16px;}
+.a11y-body{font-size:14px;color:var(--muted);line-height:1.7;}
+
+/* ═══════════════════════════ CTA ═══════════════════════════ */
+.cta-section{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:120px 40px;position:relative;overflow:hidden;background:var(--bg);}
+.cta-section::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 40px,rgba(212,150,10,0.012) 40px,rgba(212,150,10,0.012) 41px);}
+.cta-hl{font-family:'Barlow Condensed',sans-serif;font-weight:900;text-transform:uppercase;font-size:clamp(72px,12vw,180px);line-height:.87;letter-spacing:-.025em;color:var(--text);position:relative;z-index:2;opacity:0;}
+.cta-hl span{color:var(--amber);}
+.cta-sub{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);margin-top:32px;letter-spacing:.06em;position:relative;z-index:2;opacity:0;}
+.cta-btn{display:inline-block;margin-top:48px;background:var(--amber);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;letter-spacing:.14em;text-transform:uppercase;padding:22px 72px;text-decoration:none;border:2px solid var(--amber);cursor:none;position:relative;z-index:2;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));transition:background .15s,color .15s,transform .3s,box-shadow .3s;overflow:hidden;opacity:0;}
+.cta-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,0.15));transform:translateX(-100%);transition:transform .3s;}
+.cta-btn:hover{background:var(--amber2);transform:translateY(-3px);box-shadow:0 20px 60px rgba(212,150,10,0.4);}
+.cta-btn:hover::before{transform:translateX(0);}
+.cta-footer{margin-top:56px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted2);letter-spacing:.25em;text-transform:uppercase;line-height:2;position:relative;z-index:2;opacity:0;}
+
+/* ═══════════════════════════ LOADING SCREEN ═══════════════════════════ */
+#loader{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;}
+.loader-logo{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:700;color:var(--amber);letter-spacing:.3em;text-transform:uppercase;}
+.loader-bar-wrap{width:300px;height:2px;background:var(--border2);}
+.loader-bar{height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--amber2));box-shadow:0 0 10px var(--amber);}
+.loader-text{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.3em;text-transform:uppercase;}
+.loader-pct{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:80px;color:var(--text);letter-spacing:-.04em;line-height:1;}
+
+/* ═══════════════════════════ SCROLL PROGRESS ═══════════════════════════ */
+#scroll-progress{position:fixed;top:2px;left:0;height:2px;background:transparent;z-index:1001;pointer-events:none;}
+#scroll-progress-bar{height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--amber2));box-shadow:0 0 10px var(--amber);transition:width 0.1s linear;}
+
+/* ═══════════════════════════ FLOATING PARTICLES ═══════════════════════════ */
+.particle-field{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.particle{position:absolute;border-radius:50%;background:var(--amber);opacity:0;animation:particleDrift linear infinite;}
+@keyframes particleDrift{0%{transform:translateY(100vh) translateX(0);opacity:0;}10%{opacity:0.6;}90%{opacity:0.3;}100%{transform:translateY(-100px) translateX(var(--drift));opacity:0;}}
+
+/* ═══════════════════════════ REVEAL DEFAULTS ═══════════════════════════ */
+.reveal{opacity:0;transform:translateY(30px);}
+.reveal-left{opacity:0;transform:translateX(-40px);}
+.reveal-right{opacity:0;transform:translateX(40px);}
+.reveal-scale{opacity:0;transform:scale(0.9);}
+
+/* ═══════════════════════════ RESPONSIVE ═══════════════════════════ */
+@media(max-width:900px){
+nav{padding:14px 24px;}
+.inner{padding:0 24px;}
+.story-grid{grid-template-columns:1fr;gap:40px;}
+.steps-grid,.a11y-grid{grid-template-columns:1fr;}
+.split-container{grid-template-columns:1fr;}
+.split-divider{display:none;}
+.hero-content{padding:120px 24px 0;}
+.live-counter{right:24px;}
+.hero-badge-3d{display:none;}
+.marquee-item{font-size:48px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loader">
+  <div class="loader-pct" id="loaderPct">0</div>
+  <div class="loader-logo">ACCESS<span style="color:var(--text)">MAP</span></div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loaderBar"></div></div>
+  <div class="loader-text" id="loaderText">INITIALIZING COMPLIANCE ENGINE...</div>
+</div>
+
+<!-- SCROLL PROGRESS -->
+<div id="scroll-progress"><div id="scroll-progress-bar"></div></div>
+
+<!-- TOP STRIPE -->
+<div class="top-stripe"></div>
+
+<!-- PARTICLE FIELD -->
+<div class="particle-field" id="particleField"></div>
+
+<!-- BACKGROUND CANVAS -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- CURSOR -->
+<div id="cursor-trail"></div>
+<div id="cursor-outer"></div>
+<div id="cursor-inner"></div>
+
+<!-- NAV -->
+<nav id="mainNav">
+<a href="annalyzer.html" class="nav-logo"><span class="logo-bracket">[</span> ACCESS<span>MAP</span> <span class="logo-bracket">]</span></a>
+<div class="nav-pills">
+<a href="#story" class="nav-pill">OUR STORY</a>
+<a href="#diff" class="nav-pill">DIFFERENCE</a>
+<a href="#how" class="nav-pill">HOW IT WORKS</a>
+<a href="#impact" class="nav-pill">IMPACT</a>
+<a href="annalyzer.html" class="nav-pill active">ANALYZE NOW →</a>
+</div>
+<div class="nav-status">
+<div class="status-dot"></div>
+GEMINI ENGINE ONLINE
+</div>
+</nav>
+
+<!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+<section class="hero">
+<canvas id="hero-canvas"></canvas>
+<div class="hero-grid"></div>
+<div class="hero-scanlines"></div>
+
+<div class="coord tl">40.7128° N &nbsp;74.0060° W</div>
+<div class="coord tr">SECTOR: COMMERCIAL SPACES</div>
+<div class="coord bl">HACKATHON BUILD // INNOSPARK PITCH COMPETITION</div>
+<div class="coord br">BUILD: 2026.03</div>
+<div class="v-label">ADA COMPLIANCE INTELLIGENCE // POWERED BY GEMINI VISION</div>
+
+<div class="live-counter">
+<div class="lc-label">LIVE — ADA SUITS FILED TODAY</div>
+<div class="lc-number" id="lawsuitCounter">0</div>
+<div class="lc-sub">// based on 2023 annual rate</div>
+</div>
+
+<div class="hero-content">
+<div class="hero-eyebrow">BUILT FOR THE INNOSPARK PITCH COMPETITION // APRIL 4, 2026</div>
+<h1 class="hero-headline">
+<span class="hl1">YOUR SPACE IS</span>
+<span class="hl2">ONE LAWSUIT AWAY.</span>
+</h1>
+<p class="hero-sub">
+<span class="typed" id="typedText"></span>
+</p>
+
+<div class="upload-zone" id="uploadZone">
+<div class="scanline"></div>
+<div class="uc tl"></div><div class="uc tr"></div>
+<div class="uc bl"></div><div class="uc br"></div>
+<div class="uz-title">DROP PHOTO HERE</div>
+<div class="uz-sub">or click to upload — AI analysis begins immediately</div>
+<div class="uz-formats">
+<span class="uz-format">JPG</span>
+<span class="uz-format">PNG</span>
+<span class="uz-format">WEBP</span>
+<span class="uz-format">HEIC</span>
+</div>
+</div>
+
+<div class="hero-badge-3d">
+<div class="badge-inner">
+<div class="badge-face">
+<div class="badge-icon">⚖</div>
+<div class="badge-text">ADA<br>COMPLIANT<br>SCANNER<br>v4.2</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="stat-strip">
+<div class="stat-item">
+<span class="stat-num" data-val="50000">$50,000</span>
+<span class="stat-lbl">AVG LAWSUIT COST</span>
+</div>
+<div class="stat-item">
+<span class="stat-num" data-val="4195">4,195</span>
+<span class="stat-lbl">ADA SUITS IN 2023</span>
+</div>
+<div class="stat-item">
+<span class="stat-num" data-val="26">26%</span>
+<span class="stat-lbl">AMERICANS WITH A DISABILITY</span>
+</div>
+<div class="stat-item">
+<span class="stat-num">&lt; 30s</span>
+<span class="stat-lbl">FULL AI ANALYSIS TIME</span>
+</div>
+<div class="stat-item">
+<span class="stat-num">$0</span>
+<span class="stat-lbl">COST TO SCAN</span>
+</div>
+</div>
+</section>
+
+<!-- ═══════════════════════════ MARQUEE ═══════════════════════════ -->
+<div class="marquee-section">
+<div class="marquee-track">
+<span class="marquee-item">ADA COMPLIANCE</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">ZERO LAWSUITS</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">INSTANT SCAN</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">GEMINI VISION</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">847 STANDARDS</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">ADA COMPLIANCE</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">ZERO LAWSUITS</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">INSTANT SCAN</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">GEMINI VISION</span>
+<span class="marquee-item highlight">✦</span>
+<span class="marquee-item">847 STANDARDS</span>
+<span class="marquee-item highlight">✦</span>
+</div>
+</div>
+
+<!-- ═══════════════════════════ STORY ═══════════════════════════ -->
+<section class="story-section" id="story">
+<div class="story-bg-text">ADA</div>
+<div class="inner">
+<div class="sec-label reveal">[ 00 ] — THE PROBLEM</div>
+<h2 class="sec-headline reveal">THE LAW<br>DOESN'T WAIT<br>FOR <span class="amber">IGNORANCE.</span></h2>
+<div class="story-grid">
+<div class="story-left">
+<p class="story-body reveal">Most small business owners have never read a single line of the Americans with Disabilities Act. They don't know that a door handle at the wrong height, a ramp with the wrong slope, or a bathroom mirror mounted two inches too high can trigger a <strong>federal lawsuit</strong> — no warning, no grace period.</p>
+<p class="story-body reveal">The ADA was signed in 1990. In the 35 years since, compliance enforcement has accelerated every single year. In 2023, <strong>4,195 federal ADA lawsuits</strong> were filed. That's 11 per day. And the plaintiffs' attorneys don't need to prove intent — they just need to prove the violation exists.</p>
+<div class="story-pull reveal">"I HAD NO IDEA MY DOOR WAS ILLEGAL."</div>
+<p class="story-body reveal">That's what we hear from every business owner after the fact. The problem isn't malice. It's a <strong>massive information gap</strong> between complex federal regulations and the people who are legally required to follow them.</p>
+</div>
+<div class="story-right">
+<!-- Risk meter content from newlanding -->
+<div class="reveal-right" style="padding:32px;border:1px solid var(--border2);background:var(--surface);">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.25em;text-transform:uppercase;margin-bottom:20px;">// OVERALL LEGAL EXPOSURE SCORE</div>
+<div style="display:flex;align-items:flex-end;gap:16px;">
+<div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:100px;color:var(--red2);line-height:1;letter-spacing:-.04em;text-shadow:0 0 40px rgba(193,40,27,0.4);" id="riskScore">0</div>
+<div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--red2);letter-spacing:.2em;text-transform:uppercase;">/ 100</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.1em;margin-top:4px;">RISK INDEX</div>
+</div>
+</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--red2);letter-spacing:.15em;text-transform:uppercase;margin-top:12px;">⚠ IMMEDIATE ACTION REQUIRED</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ═══════════════════════════ BEFORE/AFTER ═══════════════════════════ -->
+<section class="diff-section" id="diff">
+<div class="inner">
+<div class="sec-label reveal">[ 01 ] — THE DIFFERENCE</div>
+<h2 class="sec-headline reveal">ONE PHOTO.<br>ZERO <span class="amber">EXCUSES.</span></h2>
+<div class="split-container reveal">
+<div class="split-col without">
+<div class="split-header"><span class="split-tag red">WITHOUT ACCESSMAP</span></div>
+<div class="split-item"><span class="split-icon">✕</span><div><strong>Lawsuit filed</strong><span>Plaintiff's attorney photographs your space. You had no idea.</span></div></div>
+<div class="split-item"><span class="split-icon">✕</span><div><strong>$50,000 settlement</strong><span>Average ADA settlement before legal fees and remediation costs.</span></div></div>
+<div class="split-item"><span class="split-icon">✕</span><div><strong>Forced closure</strong><span>Court-ordered remediation. Timeline controlled by opposing counsel.</span></div></div>
+<div class="split-item"><span class="split-icon">✕</span><div><strong>$5,000 consultant</strong><span>You hire an ADA specialist. They arrive in 3 weeks with a clipboard.</span></div></div>
+<div class="split-item"><span class="split-icon">✕</span><div><strong>Repeat violations</strong><span>Fine doubles to $181,071. Same violations. Different location.</span></div></div>
+<div class="split-foot red">AVG TOTAL EXPOSURE: $230,000+</div>
+</div>
+<div class="split-divider"><div class="split-vs">VS</div></div>
+<div class="split-col with">
+<div class="split-header"><span class="split-tag green">WITH ACCESSMAP</span></div>
+<div class="split-item"><span class="split-icon ok">✓</span><div><strong>Violation caught instantly</strong><span>Upload a photo. Gemini flags every issue in under 30 seconds.</span></div></div>
+<div class="split-item"><span class="split-icon ok">✓</span><div><strong>Exact ADA citations</strong><span>Every finding mapped to a specific federal code. No guessing.</span></div></div>
+<div class="split-item"><span class="split-icon ok">✓</span><div><strong>Fix cost estimated</strong><span>Door width fix: $800. Ramp re-grade: $2,500. Know before you call.</span></div></div>
+<div class="split-item"><span class="split-icon ok">✓</span><div><strong>Contractor guide generated</strong><span>Step-by-step remediation brief. Hand it directly to your contractor.</span></div></div>
+<div class="split-item"><span class="split-icon ok">✓</span><div><strong>Legal risk scored</strong><span>0-100 exposure rating. Know exactly where you stand before anyone else does.</span></div></div>
+<div class="split-foot green">TOTAL COST TO SCAN: $0</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ═══════════════════════════ HOW IT WORKS ═══════════════════════════ -->
+<section class="how-section" id="how">
+<div class="inner">
+<div class="sec-label reveal">[ 02 ] — PROCESS</div>
+<h2 class="sec-headline reveal">THREE STEPS BETWEEN<br>YOU AND A <span class="amber">LAWSUIT.</span></h2>
+<div class="steps-grid">
+<div class="step-card">
+<span class="step-num">01</span>
+<div class="step-title">PHOTOGRAPH YOUR SPACE</div>
+<p class="step-body">Point your phone at any door, ramp, bathroom, parking lot, or signage. <strong>No training. No special equipment.</strong> Just your camera. Any angle works.</p>
+</div>
+<div class="step-card">
+<span class="step-num">02</span>
+<div class="step-title">GEMINI VISION ANALYZES</div>
+<p class="step-body">Gemini 2.5 Flash cross-references every pixel against <strong>847 ADA standards in real time</strong>. Measurements inferred. Violations flagged. Citations pulled automatically.</p>
+</div>
+<div class="step-card">
+<span class="step-num">03</span>
+<div class="step-title">GET YOUR FULL REPORT</div>
+<p class="step-body">Violations flagged with <strong>exact ADA section numbers</strong>. Fix costs estimated. Legal risk scored 0–100. Contractor guide generated. All in under 30 seconds.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ═══════════════════════════ SOCIAL IMPACT ═══════════════════════════ -->
+<section class="a11y-section" id="impact">
+<div class="inner">
+<div class="sec-label reveal">[ 03 ] — SOCIAL IMPACT</div>
+<h2 class="sec-headline reveal">COMPLIANCE IS <span class="amber">INCLUSION.</span><br>INCLUSION IS HUMAN.</h2>
+<div class="a11y-grid">
+<div class="a11y-card">
+<span class="a11y-big">61M</span>
+<span class="a11y-title">Americans Live With A Disability</span>
+<p class="a11y-body">One in four U.S. adults. Every non-compliant entrance, every missing ramp, every too-narrow door is a barrier that tells 61 million people they don't belong here.</p>
+</div>
+<div class="a11y-card">
+<span class="a11y-big">$490B</span>
+<span class="a11y-title">Annual Spending Power</span>
+<p class="a11y-body">People with disabilities represent $490 billion in annual disposable income. Non-compliant businesses aren't just breaking the law — they're leaving money on the table.</p>
+</div>
+<div class="a11y-card">
+<span class="a11y-big">320%</span>
+<span class="a11y-title">Increase In ADA Suits Over 10 Years</span>
+<p class="a11y-body">Litigation is accelerating. The old model — waiting for a complaint — is over. Proactive compliance is the only viable strategy. AccessMap makes it instant and affordable.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ═══════════════════════════ CTA ═══════════════════════════ -->
+<section class="cta-section" id="cta">
+<div>
+<h2 class="cta-hl">STOP GUESSING.<br><span>START COMPLYING.</span></h2>
+<p class="cta-sub">// Upload your first photo. Get your full report in 30 seconds. Free.</p>
+<a href="annalyzer.html" class="cta-btn">ANALYZE MY SPACE NOW</a>
+<div class="cta-footer">
+ACCESSMAP — ADA COMPLIANCE INTELLIGENCE<br>
+// BUILT WITH GEMINI VISION API &nbsp;// &nbsp;SUBMISSION FOR THE INNOSPARK PITCH COMPETITION
+</div>
+</div>
+</section>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  LOADING SCREEN
+// ═══════════════════════════════════════════════════════════
+const loaderTexts = [
+'INITIALIZING COMPLIANCE ENGINE...',
+'LOADING ADA STANDARDS DATABASE...',
+'CALIBRATING VISION MODELS...',
+'PREPARING RISK ASSESSMENT...',
+'SYSTEM READY.'
+];
+let loaderProgress = 0;
+const loaderBar = document.getElementById('loaderBar');
+const loaderPct = document.getElementById('loaderPct');
+const loaderText = document.getElementById('loaderText');
+const loader = document.getElementById('loader');
+
+function animateLoader() {
+const interval = setInterval(() => {
+loaderProgress += Math.random() * 15 + 5;
+if (loaderProgress >= 100) loaderProgress = 100;
+loaderBar.style.width = loaderProgress + '%';
+loaderPct.textContent = Math.floor(loaderProgress);
+const idx = Math.min(Math.floor(loaderProgress / 20), loaderTexts.length - 1);
+loaderText.textContent = loaderTexts[idx];
+if (loaderProgress >= 100) {
+clearInterval(interval);
+setTimeout(() => {
+gsap.to(loader, {
+opacity: 0, duration: 0.8, ease: 'power2.inOut',
+onComplete: () => { loader.style.display = 'none'; startHeroAnimations(); }
+});
+}, 300);
+}
+}, 80);
+}
+animateLoader();
+
+// ═══════════════════════════════════════════════════════════
+//  GSAP SETUP
+// ═══════════════════════════════════════════════════════════
+gsap.registerPlugin(ScrollTrigger);
+
+// ═══════════════════════════════════════════════════════════
+//  CURSOR
+// ═══════════════════════════════════════════════════════════
+const cursorOuter = document.getElementById('cursor-outer');
+const cursorInner = document.getElementById('cursor-inner');
+const cursorTrail = document.getElementById('cursor-trail');
+let mx = 0, my = 0, ox = 0, oy = 0, tx = 0, ty = 0;
+
+document.addEventListener('mousemove', e => {
+mx = e.clientX; my = e.clientY;
+gsap.to(cursorInner, { x: mx, y: my, duration: 0.05 });
+gsap.to(cursorTrail, { x: mx, y: my, duration: 0.4 });
+});
+
+function animateCursor() {
+ox += (mx - ox) * 0.1;
+oy += (my - oy) * 0.1;
+gsap.set(cursorOuter, { x: ox, y: oy });
+requestAnimationFrame(animateCursor);
+}
+animateCursor();
+
+document.querySelectorAll('a, button, .upload-zone, .step-card, .a11y-card').forEach(el => {
+el.addEventListener('mouseenter', () => {
+document.body.classList.add('cursor-hover');
+gsap.to(cursorInner, { scale: 0.5, duration: 0.2 });
+});
+el.addEventListener('mouseleave', () => {
+document.body.classList.remove('cursor-hover');
+gsap.to(cursorInner, { scale: 1, duration: 0.2 });
+});
+});
+
+// ═══════════════════════════════════════════════════════════
+//  SCROLL PROGRESS
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('scroll', () => {
+const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+document.getElementById('scroll-progress-bar').style.width = pct + '%';
+document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  FLOATING PARTICLES
+// ═══════════════════════════════════════════════════════════
+const pf = document.getElementById('particleField');
+for (let i = 0; i < 30; i++) {
+const p = document.createElement('div');
+p.className = 'particle';
+const size = Math.random() * 3 + 1;
+const left = Math.random() * 100;
+const duration = Math.random() * 20 + 15;
+const delay = Math.random() * 20;
+const drift = (Math.random() - 0.5) * 200;
+p.style.cssText = `
+width:${size}px;height:${size}px;
+left:${left}%;bottom:-10px;
+animation-duration:${duration}s;
+animation-delay:${delay}s;
+--drift:${drift}px;
+opacity:0.4;
+`;
+pf.appendChild(p);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BACKGROUND CANVAS — NEURAL NETWORK
+// ═══════════════════════════════════════════════════════════
+(function() {
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, nodes = [];
+
+function resize() {
+W = canvas.width = window.innerWidth;
+H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+for (let i = 0; i < 60; i++) {
+nodes.push({
+x: Math.random() * W, y: Math.random() * H,
+vx: (Math.random() - 0.5) * 0.3,
+vy: (Math.random() - 0.5) * 0.3,
+r: Math.random() * 2 + 1
+});
+}
+
+function drawBg() {
+ctx.clearRect(0, 0, W, H);
+nodes.forEach(n => {
+n.x += n.vx; n.y += n.vy;
+if (n.x < 0 || n.x > W) n.vx *= -1;
+if (n.y < 0 || n.y > H) n.vy *= -1;
+});
+for (let i = 0; i < nodes.length; i++) {
+for (let j = i + 1; j < nodes.length; j++) {
+const dx = nodes[i].x - nodes[j].x;
+const dy = nodes[i].y - nodes[j].y;
+const dist = Math.sqrt(dx*dx + dy*dy);
+if (dist < 180) {
+ctx.beginPath();
+ctx.moveTo(nodes[i].x, nodes[i].y);
+ctx.lineTo(nodes[j].x, nodes[j].y);
+ctx.strokeStyle = `rgba(212,150,10,${0.06 * (1 - dist/180)})`;
+ctx.lineWidth = 0.5;
+ctx.stroke();
+}
+}
+}
+nodes.forEach(n => {
+ctx.beginPath();
+ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(212,150,10,0.15)';
+ctx.fill();
+});
+requestAnimationFrame(drawBg);
+}
+drawBg();
+})();
+
+// ═══════════════════════════════════════════════════════════
+//  HERO THREE.JS — ADVANCED BUILDING + PARTICLES
+// ═══════════════════════════════════════════════════════════
+(function() {
+const canvas = document.getElementById('hero-canvas');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+// ── BUILDING WIREFRAME CITY ──
+const buildingGroup = new THREE.Group();
+scene.add(buildingGroup);
+
+function createBuilding(x, z, w, h, d) {
+const geo = new THREE.BoxGeometry(w, h, d);
+const edges = new THREE.EdgesGeometry(geo);
+const mat = new THREE.LineBasicMaterial({
+color: 0xD4960A,
+transparent: true,
+opacity: 0.2
+});
+const mesh = new THREE.LineSegments(edges, mat);
+mesh.position.set(x, h/2 - 8, z);
+return mesh;
+}
+
+// City grid
+const buildings = [
+[0, 0, 2, 14, 2],
+[-4, -2, 1.5, 10, 1.5],
+[4, 1, 1.8, 18, 1.8],
+[-7, 3, 2, 8, 2],
+[7, -3, 1.5, 12, 1.5],
+[-3, 5, 1.2, 6, 1.2],
+[3, -5, 2.2, 16, 2.2],
+[-10, 0, 1.5, 9, 1.5],
+[10, 2, 1.8, 11, 1.8],
+[0, 6, 1.5, 7, 1.5],
+[-6, -5, 1.2, 5, 1.2],
+[6, 5, 1.5, 13, 1.5],
+[-12, -3, 1, 6, 1],
+[12, -1, 1.2, 8, 1.2],
+[2, 8, 1, 5, 1],
+[-2, -8, 1.5, 7, 1.5],
+];
+buildings.forEach(b => buildingGroup.add(createBuilding(...b)));
+
+// Ground grid
+const gridHelper = new THREE.GridHelper(60, 30, 0x1a1a1a, 0x111111);
+gridHelper.position.y = -8;
+scene.add(gridHelper);
+
+// ── PARTICLES ──
+const particleCount = 3000;
+const positions = new Float32Array(particleCount * 3);
+const colors = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+positions[i*3] = (Math.random() - 0.5) * 60;
+positions[i*3+1] = (Math.random() - 0.5) * 40;
+positions[i*3+2] = (Math.random() - 0.5) * 60;
+const t = Math.random();
+colors[i*3] = 0.83 * t + 0.1;
+colors[i*3+1] = 0.59 * t;
+colors[i*3+2] = 0.04 * t;
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+const pMat = new THREE.PointsMaterial({
+size: 0.08, vertexColors: true,
+transparent: true, opacity: 0.7,
+sizeAttenuation: true
+});
+const particles = new THREE.Points(pGeo, pMat);
+scene.add(particles);
+
+// ── CENTRAL SPHERE ──
+const sphereGeo = new THREE.IcosahedronGeometry(3, 3);
+const sphereMat = new THREE.MeshBasicMaterial({
+color: 0xD4960A, wireframe: true,
+transparent: true, opacity: 0.12
+});
+const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+sphere.position.set(8, 2, -5);
+scene.add(sphere);
+
+camera.position.set(0, 4, 22);
+camera.lookAt(0, 0, 0);
+
+let mouseX = 0, mouseY = 0;
+document.addEventListener('mousemove', e => {
+mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+const clock = new THREE.Clock();
+function animate() {
+const t = clock.getElapsedTime();
+buildingGroup.rotation.y += (mouseX * 0.3 - buildingGroup.rotation.y) * 0.02;
+buildingGroup.rotation.x += (-mouseY * 0.1 - buildingGroup.rotation.x) * 0.02;
+particles.rotation.y = t * 0.03;
+particles.rotation.x = mouseY * 0.1;
+sphere.rotation.y = t * 0.4;
+sphere.rotation.x = t * 0.2;
+// Pulse opacity
+sphereMat.opacity = 0.08 + Math.sin(t * 2) * 0.04;
+renderer.render(scene, camera);
+requestAnimationFrame(animate);
+}
+animate();
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+})();
+
+// ═══════════════════════════════════════════════════════════
+//  HERO ANIMATIONS (called after loader)
+// ═══════════════════════════════════════════════════════════
+function startHeroAnimations() {
+const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
+tl.to('.hero-eyebrow', { opacity: 1, y: 0, duration: 0.8 })
+.to('.hl1', { opacity: 1, y: 0, duration: 1 }, '-=0.5')
+.to('.hl2', { opacity: 1, y: 0, duration: 1 }, '-=0.7')
+.to('.hero-sub', { opacity: 1, duration: 0.8 }, '-=0.5')
+.to('.upload-zone', { opacity: 1, y: 0, duration: 0.8 }, '-=0.5')
+.to('.stat-strip', { opacity: 1, y: 0, duration: 0.8 }, '-=0.6')
+.to('.live-counter', { opacity: 1, x: 0, duration: 0.8 }, '-=0.8')
+.to('.hero-badge-3d', { opacity: 1, duration: 0.8 }, '-=0.6');
+
+// Start typewriter after hero loads
+setTimeout(typeIt, 800);
+// Start risk score counter
+setTimeout(animateRiskScore, 1200);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TYPEWRITER
+// ═══════════════════════════════════════════════════════════
+const txt = '// AI-powered ADA compliance. One photo. Every violation. Zero guessing.';
+let ti = 0;
+const typedEl = document.getElementById('typedText');
+function typeIt() {
+if (ti <= txt.length) {
+typedEl.textContent = txt.slice(0, ti);
+ti++;
+setTimeout(typeIt, ti < 5 ? 0 : 28);
+} else {
+setTimeout(() => {
+gsap.to('.typed', { borderRightColor: 'transparent', duration: 0.5, repeat: -1, yoyo: true });
+}, 500);
+}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RISK SCORE ANIMATION
+// ═══════════════════════════════════════════════════════════
+function animateRiskScore() {
+let score = 0;
+const target = 74;
+const el = document.getElementById('riskScore');
+const interval = setInterval(() => {
+score += 2;
+if (score >= target) { score = target; clearInterval(interval); }
+el.textContent = score;
+}, 30);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LAWSUIT COUNTER
+// ═══════════════════════════════════════════════════════════
+const counterEl = document.getElementById('lawsuitCounter');
+const now = new Date();
+const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+let cVal = Math.floor((now - dayStart) / 1000 / 3600 * 0.48);
+counterEl.textContent = cVal;
+setInterval(() => {
+cVal++;
+counterEl.textContent = cVal;
+gsap.fromTo(counterEl, { scale: 1.1, color: '#ff4444' }, { scale: 1, color: '#C1281B', duration: 0.4, ease: 'back.out(2)' });
+}, 7 * 60 * 1000);
+
+// ═══════════════════════════════════════════════════════════
+//  SCROLL TRIGGERS
+// ═══════════════════════════════════════════════════════════
+// Generic reveal
+gsap.utils.toArray('.reveal').forEach(el => {
+gsap.to(el, {
+scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none reverse' },
+y: 0, opacity: 1, duration: 0.9, ease: 'power3.out'
+});
+});
+gsap.utils.toArray('.reveal-left').forEach(el => {
+gsap.to(el, {
+scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none reverse' },
+x: 0, opacity: 1, duration: 0.9, ease: 'power3.out'
+});
+});
+gsap.utils.toArray('.reveal-right').forEach(el => {
+gsap.to(el, {
+scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none reverse' },
+x: 0, opacity: 1, duration: 0.9, ease: 'power3.out'
+});
+});
+
+// Step cards stagger
+gsap.utils.toArray('.step-card').forEach((el, i) => {
+gsap.to(el, {
+scrollTrigger: { trigger: el, start: 'top 90%' },
+y: 0, opacity: 1, duration: 0.7, delay: i * 0.15, ease: 'power3.out'
+});
+});
+
+// A11y cards stagger
+gsap.utils.toArray('.a11y-card').forEach((el, i) => {
+gsap.to(el, {
+scrollTrigger: { trigger: el, start: 'top 90%' },
+y: 0, opacity: 1, duration: 0.7, delay: i * 0.15, ease: 'power3.out'
+});
+});
+
+// Split container reveal
+ScrollTrigger.create({
+trigger: '.split-container',
+start: 'top 85%',
+onEnter: () => {
+gsap.to('.split-container', { opacity: 1, duration: 0.8, ease: 'power3.out' });
+gsap.utils.toArray('.split-item').forEach((el, i) => {
+gsap.from(el, { x: el.closest('.without') ? -30 : 30, opacity: 0, duration: 0.5, delay: i * 0.08, ease: 'power3.out' });
+});
+}
+});
+
+// CTA animations
+gsap.to('.cta-hl', {
+scrollTrigger: { trigger: '.cta-section', start: 'top 80%' },
+opacity: 1, y: 0, duration: 1, ease: 'power4.out'
+});
+gsap.to('.cta-sub', {
+scrollTrigger: { trigger: '.cta-section', start: 'top 80%' },
+opacity: 1, duration: 0.8, delay: 0.3, ease: 'power3.out'
+});
+gsap.to('.cta-btn', {
+scrollTrigger: { trigger: '.cta-section', start: 'top 80%' },
+opacity: 1, duration: 0.8, delay: 0.5, ease: 'power3.out'
+});
+gsap.to('.cta-footer', {
+scrollTrigger: { trigger: '.cta-section', start: 'top 80%' },
+opacity: 1, duration: 0.8, delay: 0.8, ease: 'power3.out'
+});
+
+// ═══════════════════════════════════════════════════════════
+//  NUMBER COUNTERS
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('[data-val]').forEach(counter => {
+const target = parseFloat(counter.getAttribute('data-val'));
+ScrollTrigger.create({
+trigger: counter,
+start: 'top 85%',
+once: true,
+onEnter: () => {
+let start = 0;
+const duration = 2000;
+const startTime = performance.now();
+function update(now) {
+const elapsed = now - startTime;
+const progress = Math.min(elapsed / duration, 1);
+const eased = 1 - Math.pow(1 - progress, 3);
+const val = Math.round(eased * target);
+counter.textContent = val.toLocaleString();
+if (progress < 1) requestAnimationFrame(update);
+}
+requestAnimationFrame(update);
+}
+});
+});
+
+// ═══════════════════════════════════════════════════════════
+//  PARALLAX ON HERO BG TEXT
+// ═══════════════════════════════════════════════════════════
+gsap.to('.story-bg-text', {
+scrollTrigger: {
+trigger: '.story-section',
+start: 'top bottom',
+end: 'bottom top',
+scrub: true
+},
+y: -200,
+ease: 'none'
+});
+
+// ═══════════════════════════════════════════════════════════
+//  UPLOAD ZONE
+// ═══════════════════════════════════════════════════════════
+const uz = document.getElementById('uploadZone');
+uz.addEventListener('dragover', e => {
+e.preventDefault();
+gsap.to(uz, { background: 'rgba(212,150,10,.1)', duration: 0.2 });
+});
+uz.addEventListener('dragleave', () => {
+gsap.to(uz, { background: 'rgba(212,150,10,.025)', duration: 0.2 });
+});
+uz.addEventListener('drop', e => {
+e.preventDefault();
+uz.querySelector('.uz-title').textContent = 'OPENING ANALYZER...';
+gsap.to(uz, { borderColor: 'var(--green2)', boxShadow: '0 0 40px rgba(42,158,82,0.3)', duration: 0.3 });
+setTimeout(() => window.location.href = 'annalyzer.html', 400);
+});
+uz.addEventListener('click', () => window.location.href = 'annalyzer.html');
+
+// ═══════════════════════════════════════════════════════════
+//  SMOOTH ANCHOR SCROLL
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+a.addEventListener('click', e => {
+e.preventDefault();
+const t = document.querySelector(a.getAttribute('href'));
+if (t) t.scrollIntoView({ behavior: 'smooth' });
+});
+});
+
+// ═══════════════════════════════════════════════════════════
+//  HERO PARALLAX ON SCROLL
+// ═══════════════════════════════════════════════════════════
+gsap.to('.hero-content', {
+scrollTrigger: {
+trigger: '.hero',
+start: 'top top',
+end: 'bottom top',
+scrub: true
+},
+y: 120,
+opacity: 0.3,
+ease: 'none'
+});
+
+gsap.to('#hero-canvas', {
+scrollTrigger: {
+trigger: '.hero',
+start: 'top top',
+end: 'bottom top',
+scrub: true
+},
+y: 80,
+ease: 'none'
+});
+
+// ═══════════════════════════════════════════════════════════
+//  WINDOW RESIZE
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('resize', () => ScrollTrigger.refresh());
+</script>
+</body>
+</html>
